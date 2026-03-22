@@ -1,0 +1,38 @@
+{
+  "name": "Safe Contact Fullstack Dev",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.formatting.provider": "black"
+      },
+      "extensions": [
+        "Vue.volar", // Vue.js
+        "ms-python.python", // Python
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        "bradlc.vscode-tailwindcss", // Tailwind v4
+        "dbaeumer.vscode-eslint", // Линтер
+        "esbenp.prettier-vscode", // Форматтер
+        "mtxr.sqltools", // Работа с БД
+        "mtxr.sqltools-driver-pg",
+        "ms-azuretools.vscode-containers", // Докер
+        "christian-kohler.path-intellisense" // Прочее
+      ]
+    }
+  },
+  "forwardPorts": [5173, 5000, 5432],
+  "portsAttributes": {
+    "5173": { "label": "Vite Frontend", "onAutoForward": "notify" },
+    "5000": { "label": "Flask Backend", "onAutoForward": "notify" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "ignore" }
+  },
+  "postCreateCommand": "npm install --prefix frontend && pip install -r backend/requirements.txt && bash .devcontainer/welcome.sh",
+  "remoteUser": "vscode"
+}

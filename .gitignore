@@ -1,0 +1,24 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Docker & Logs
+*.log
+.docker/
+docker-compose.override.yml
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+__pycache__/
+.venv/
+.pytest_cache/

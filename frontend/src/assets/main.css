@@ -1,6 +1,4 @@
 @import 'tailwindcss';
-<<<<<<< Updated upstream
-=======
 @import 'primeicons/primeicons.css';
 
 @theme {
@@ -34,4 +32,3 @@
     @apply text-sm md:text-base text-slate-600 font-normal;
   }
 }
->>>>>>> Stashed changes

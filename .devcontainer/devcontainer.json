@@ -21,7 +21,7 @@
     "NODE_ENV": "development",
     "VITE_API_URL": "http://localhost:5000"
   },
-  "postCreateCommand": "npm install --prefix frontend && pip install -r backend/requirements.txt && echo './.devcontainer/welcome.sh' >> ~/.bashrc",
+  "postCreateCommand": "chmod +x ./.devcontainer/welcome.sh && npm install --prefix frontend && pip install -r backend/requirements.txt && echo './.devcontainer/welcome.sh' >> ~/.bashrc",
 
   "customizations": {
     "vscode": {

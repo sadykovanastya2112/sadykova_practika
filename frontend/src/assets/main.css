@@ -1,1 +1,37 @@
 @import 'tailwindcss';
+<<<<<<< Updated upstream
+=======
+@import 'primeicons/primeicons.css';
+
+@theme {
+  --color-emerald-500: var(--p-emerald-500);
+}
+
+@layer base {
+  html {
+    @apply bg-slate-50;
+  }
+  h1 {
+    @apply text-3xl md:text-5xl font-black text-slate-800 leading-[1.1] text-center;
+  }
+
+  h2 {
+    @apply text-2xl md:text-4xl font-bold text-slate-700 text-center;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-bold text-slate-600 text-center;
+  }
+  h4 {
+    @apply text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto text-center;
+  }
+
+  p {
+    @apply text-base md:text-lg text-slate-700 leading-relaxed;
+  }
+
+  small {
+    @apply text-sm md:text-base text-slate-600 font-normal;
+  }
+}
+>>>>>>> Stashed changes

@@ -5,10 +5,10 @@ load_dotenv()
 
 class Config():
     SECRET_KEY= os.getenv('SECRET_KEY', 'super-secret-key')
-    AUTHGEAR_CLIENT_ID  = os.getenv('AUTHGEAR_CLIENT_ID')
-    AUTHGEAR_CLIENT_SECRET = os.getenv('AUTHGEAR_CLIENT_SECRET')
-    AUTHGEAR_ISSUER = os.getenv('AUTHGEAR_ISSUER')
-    AUTHGEAR_REDIRECT_URI = os.getenv('AUTHGEAR_REDIRECT_URI')
+    LOGTO_CLIENT_ID  = os.getenv('LOGTO_CLIENT_ID')
+    LOGTO_CLIENT_SECRET = os.getenv('LOGTO_CLIENT_SECRET')
+    LOGTO_ISSUER = os.getenv('LOGTO_ISSUER')
+    LOGTO_REDIRECT_URI = os.getenv('LOGTO_REDIRECT_URI')
     SESSION_TYPE = 'filesystem'
     SESSION_FILE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'flask_session')
     SESSION_COOKIE_DOMAIN = '127.0.0.1'

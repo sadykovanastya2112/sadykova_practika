@@ -1,14 +1,13 @@
 # bluprint для регистрации
 import secrets
+from datetime import datetime
 
 from authlib.integrations.flask_client import OAuthError
 from flask import Blueprint, current_app, jsonify, redirect, request, session
 
-from app.models import Member, Role, MemberRole, Client
-from datetime import datetime
 from app.extension import db
 from app.logto import oauth
-from app.models import Member, MemberRole, Role
+from app.models import Client, Member, MemberRole, Role
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -21,8 +20,8 @@ def login():
     # сохряет стате в сессии, что бы проверять на возврате
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
-    redirect_uri = current_app.config["AUTHGEAR_REDIRECT_URI"]
-    return oauth.authgear.authorize_redirect(redirect_uri, state=state, nonce=nonce)
+    redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
+    return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
 
 
 @auth_bp.route("/callback")
@@ -37,31 +36,26 @@ def callback():
 
     try:
         # код авторизации на код досутпа
-        token = oauth.authgear.authorize_access_token()
+        token = oauth.logto.authorize_access_token()
     except OAuthError as e:
         return jsonify({"error": f"authorizstion failed: {e.error}"}), 400
 
-   
     # извлечение информации user'а из ID-токена (JWT)
-    user_info = oauth.authgear.parse_id_token(token, nonce=session.get("oauth_nonce"))
+    user_info = oauth.logto.parse_id_token(token, nonce=session.get("oauth_nonce"))
     auth_id = user_info["sub"]  # айди пользователя
     email = user_info["email"]  # email user
     member = Member.query.filter_by(auth_id=auth_id).first()
 
     if not member:
-        member = Member(
-            auth_id=auth_id,
-            is_active=True,
-            created_at=datetime.utcnow()
-        )
+        member = Member(auth_id=auth_id, is_active=True, created_at=datetime.utcnow())
         db.session.add(member)
         db.session.commit()
 
         # 4a. Назначение роли 'client'
         # Убедимся, что роль 'client' существует
-        client_role = Role.query.filter_by(code='client').first()
+        client_role = Role.query.filter_by(code="client").first()
         if not client_role:
-            client_role = Role(code='client', label='Клиент')
+            client_role = Role(code="client", label="Клиент")
             db.session.add(client_role)
             db.session.commit()
 
@@ -69,18 +63,17 @@ def callback():
             member_id=member.id,
             role_id=client_role.id,
             is_active=True,
-            assigned_at=datetime.utcnow()
+            assigned_at=datetime.utcnow(),
         )
         db.session.add(member_role)
         db.session.commit()
-
 
         # 4b. Создание записи в Client (если нужна)
         # Предполагаем, что по умолчанию пользователь – клиент
         client = Client(
             member_id=member.id,
-            display_name=email.split('@')[0] if email else f"User{member.id}",
-            created_at=datetime.utcnow()
+            display_name=email.split("@")[0] if email else f"User{member.id}",
+            created_at=datetime.utcnow(),
         )
         db.session.add(client)
         db.session.commit()
@@ -92,14 +85,13 @@ def callback():
         db.session.commit()
 
     # 5. Сохраняем member.id в сессию для быстрого доступа
-    session['member_id'] = member.id
-    
-    return redirect('http://127.0.0.1:5000/dashboard')
+    session["member_id"] = member.id
 
+    return redirect("http://127.0.0.1:5000/dashboard")
 
 
 @auth_bp.route("/logout")
 def logout():
     session.clear()
-    logout_url = f"{current_app.config['AUTHGEAR_ISSUER']}/logout?post_logout_redirect_uri=http://127.0.0.1:5000"
+    logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri=http://127.0.0.1:5000"
     return redirect(logout_url)

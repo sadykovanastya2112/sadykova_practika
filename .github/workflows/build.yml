@@ -2,7 +2,7 @@ name: CI/CD - Build and Deploy
 
 on:
   push:
-    branches: ["develop", "main"]
+    branches: ["**"]
 
 jobs:
   build-and-push:
@@ -34,7 +34,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          # Пушим только если это ветка main
           push: ${{ github.ref_name == 'main' }}
           tags: ghcr.io/${{ env.REPO_LC }}/backend:latest
 
@@ -42,7 +41,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
-          # Пушим только если это ветка main
           push: ${{ github.ref_name == 'main' }}
           tags: ghcr.io/${{ env.REPO_LC }}/frontend:latest
 

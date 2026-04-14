@@ -54,29 +54,32 @@ def get_specialist_slots():
 @slots_bp.route("/create", methods=["POST"])
 @jwt_required
 def create_slot():
-    # получаем слоты специлиста
+    # получаем слоты специалиста
     member_id = g.member_id
-    specialist, error_responce, status = get_current_specialist(member_id)
-    if error_responce:
-        return error_responce, status
+    specialist, error_response, status = get_current_specialist(member_id)
+    if error_response:
+        return error_response, status
 
     # Получаем данные в JSON
     data_ab_slot = request.get_json()
     if not data_ab_slot:
         return jsonify({"error": "data is not in JSON format"}), 400
+
     # проверка на то что пришёл список данных
     if isinstance(data_ab_slot, list):
         new_slots = []
-        # определеяем начало и конец в iso формате
         for item in data_ab_slot:
-            start_at = datetime.isoformat(item.get("start_at"))
-            end_at = datetime.isoformat(item.get("end_at"))
+            # преобразуем строку в объект datetime
+            try:
+                start_at = datetime.fromisoformat(item.get("start_at"))
+                end_at = datetime.fromisoformat(item.get("end_at"))
+            except (TypeError, ValueError):
+                return jsonify({"error": "Invalid date format, use ISO 8601"}), 400
+
             # проверка на правильность дат
             if start_at >= end_at:
                 return jsonify({"error": "start_at > end_at"}), 400
 
-            # создаём новый объект слота
-            # без external_id потому что слот создан вручную
             slot = Slot(
                 specialist_id=specialist.id,
                 start_at=start_at,
@@ -86,7 +89,7 @@ def create_slot():
             db.session.add(slot)
             new_slots.append(slot)
         db.session.commit()
-        # отдаём слотов
+        # отдаём слоты
         return jsonify([
             {
                 "id": s.id,
@@ -94,14 +97,19 @@ def create_slot():
                 "end_at": s.end_at.isoformat(),
                 "external_id": s.external_id,
             }
-            for s in slot
-            ])
+            for s in new_slots
+        ]), 201
     else:
         # аналогично, только теперь если это не список
-        start_at = datetime.isoformat(data_ab_slot.get("start_at"))
-        end_at = datetime.isoformat(data_ab_slot.get("end_at"))
+        try:
+            start_at = datetime.fromisoformat(data_ab_slot.get("start_at"))
+            end_at = datetime.fromisoformat(data_ab_slot.get("end_at"))
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid date format, use ISO 8601"}), 400
+
         if start_at >= end_at:
             return jsonify({"error": "start_at > end_at"}), 400
+
         slot = Slot(
             specialist_id=specialist.id,
             start_at=start_at,

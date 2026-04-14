@@ -9,6 +9,7 @@ from app.models import seed_role
 from app.payments import payments_bp
 from app.slots import slots_bp
 from app.users import users_bp
+from app.client import clients_bp
 
 
 def create_app(config_Class=Config):
@@ -35,6 +36,7 @@ def create_app(config_Class=Config):
     app.register_blueprint(users_bp, url_prefix="/users")
     app.register_blueprint(payments_bp, url_prefix="/payments")
     app.register_blueprint(slots_bp, url_prefix="/slots")
+    app.register_blueprint(clients_bp, url_prefix="/client")
 
     # @app.errorhandler(Exception)
     # def hendle_experere(e):

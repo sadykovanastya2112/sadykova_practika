@@ -8,7 +8,7 @@ from app.logto import init_logto
 from app.models import seed_role
 from app.payments import payments_bp
 from app.slots import slots_bp
-from app.users import users_bp
+from app.specialist import specialist_bp
 from app.client import clients_bp
 
 
@@ -33,7 +33,7 @@ def create_app(config_Class=Config):
 
     # регистрация blueprints
     app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(users_bp, url_prefix="/users")
+    app.register_blueprint(specialist_bp, url_prefix="/specialist")
     app.register_blueprint(payments_bp, url_prefix="/payments")
     app.register_blueprint(slots_bp, url_prefix="/slots")
     app.register_blueprint(clients_bp, url_prefix="/client")

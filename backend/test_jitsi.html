@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jitsi Meet Test</title>
+    <style>
+        #jitsi-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест Jitsi Meet</h1>
+    <div id="jitsi-container"></div>
+
+    <script src="https://meet.jit.si/external_api.js"></script>
+    <script>
+        const domain = 'meet.jit.si';
+        const options = {
+            roomName: 'TestRoomForMyProject123',  // уникальное имя комнаты
+            width: '100%',
+            height: '100%',
+            parentNode: document.querySelector('#jitsi-container'),
+            userInfo: {
+                displayName: 'Тестовый пользователь'
+            },
+            configOverwrite: {
+                startWithAudioMuted: false,   // начать со звуком
+                startWithVideoMuted: false    // начать с видео
+            },
+            interfaceConfigOverwrite: {
+                TOOLBAR_BUTTONS: [             // какие кнопки показывать
+                    'microphone', 'camera', 'closedcaptions', 'desktop',
+                    'fullscreen', 'fodeviceselection', 'hangup',
+                    'profile', 'chat', 'recording', 'livestreaming',
+                    'etherpad', 'sharedvideo', 'settings', 'raisehand',
+                    'videoquality', 'filmstrip', 'invite', 'feedback',
+                    'stats', 'shortcuts', 'tileview', 'videobackgroundblur',
+                    'download', 'help', 'mute-everyone'
+                ]
+            }
+        };
+
+        const api = new JitsiMeetExternalAPI(domain, options);
+
+        // Обработка событий (опционально)
+        api.addEventListener('readyToClose', () => {
+            console.log('Конференция завершена');
+        });
+    </script>
+</body>
+</html>

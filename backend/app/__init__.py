@@ -18,6 +18,8 @@ def create_app(config_Class=Config):
 
     app.config["SQLALCHEMY_DATABASE_URI"]
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config['UPLOAD_FOLDER'] = Config.UPLOAD_FOLDER
+    app.config['MAX_CONTENT_LENGTH'] = Config.MAX_CONTENT_LENGTH
 
     # инициализация расширений
     Session(app)
@@ -37,6 +39,11 @@ def create_app(config_Class=Config):
     app.register_blueprint(payments_bp, url_prefix="/payments")
     app.register_blueprint(slots_bp, url_prefix="/slots")
     app.register_blueprint(clients_bp, url_prefix="/client")
+
+
+
+
+    
 
     # @app.errorhandler(Exception)
     # def hendle_experere(e):

@@ -18,5 +18,9 @@ class Config():
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True
+    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'}
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
+
 
     

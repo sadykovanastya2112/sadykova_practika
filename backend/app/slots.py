@@ -46,6 +46,7 @@ def get_specialist_slots():
                 "end_at": s.end_at.isoformat(),
                 "external_id": s.external_id,
                 "provider": s.provider,
+                "price": s.price
             }
         ), 200
 
@@ -64,13 +65,19 @@ def create_slot():
     data_ab_slot = request.get_json()
     if not data_ab_slot:
         return jsonify({"error": "data is not in JSON format"}), 400
-
+    
     # проверка на то что пришёл список данных
     if isinstance(data_ab_slot, list):
         new_slots = []
         for item in data_ab_slot:
             # преобразуем строку в объект datetime
             try:
+                price_slot = item.get('price')
+                if not price_slot or price_slot < 0:
+                    price_slot = specialist.base_price
+            except (TypeError, ValueError):
+                return jsonify({"error": "invalid price"}), 400
+            try:    
                 start_at = datetime.fromisoformat(item.get("start_at"))
                 end_at = datetime.fromisoformat(item.get("end_at"))
             except (TypeError, ValueError):
@@ -85,6 +92,7 @@ def create_slot():
                 start_at=start_at,
                 end_at=end_at,
                 provider="manual",
+                price = price_slot
             )
             db.session.add(slot)
             new_slots.append(slot)
@@ -96,12 +104,20 @@ def create_slot():
                 "start_at": s.start_at.isoformat(),
                 "end_at": s.end_at.isoformat(),
                 "external_id": s.external_id,
+                "price": s.price_slot
             }
             for s in new_slots
         ]), 201
     else:
         # аналогично, только теперь если это не список
         try:
+            if 'price' in data_ab_slot:
+                price_slot = data_ab_slot.get('price')
+                if price_slot < 0:
+                    price_slot = specialist.base_price
+            else:
+                price_slot = specialist.base_price
+             
             start_at = datetime.fromisoformat(data_ab_slot.get("start_at"))
             end_at = datetime.fromisoformat(data_ab_slot.get("end_at"))
         except (TypeError, ValueError):
@@ -115,6 +131,7 @@ def create_slot():
             start_at=start_at,
             end_at=end_at,
             provider="manual",
+            price = price_slot
         )
         db.session.add(slot)
         db.session.commit()
@@ -123,6 +140,7 @@ def create_slot():
                 "id": slot.id,
                 "start_at": slot.start_at.isoformat(),
                 "end_at": slot.end_at.isoformat(),
+                "price": price_slot
             }
         ), 201
 

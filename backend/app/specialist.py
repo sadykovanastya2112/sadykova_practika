@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, g
-from app.extensions import db
+from app.extension import db
 from app.models import Specialist, Review
 from sqlalchemy import func, and_, or_
 from app.jwt_auth import jwt_required
@@ -150,8 +150,6 @@ def specialist_profile():
     #     'rating': avg_rating,
     #     'reviews_count': reviews_count,
     #     'recent_reviews': reviews_list,
-    #     'created_at': specialist.created_at.isoformat() if specialist.created_at else None,
-    #     'timezone': member.timezone if member else None
     # }), 200
 
     # Рейтинг

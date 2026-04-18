@@ -85,6 +85,8 @@ def create_appointment():
 
     # я пока неуверен может ли пользователь одновременно сделать несколько бронирований, но пока что сделаю только по одному
 
+
+    price_appoinment = slot.price
     status = AppointmentStatus.query.filter_by(code="pending_payment").first()
 
     appointment = Appointment(
@@ -92,6 +94,7 @@ def create_appointment():
         client_id=client.id,
         status_id=status.id,
         created_at=datetime.now(),
+        price = price_appoinment
     )
 
     db.session.add(appointment)
@@ -103,5 +106,6 @@ def create_appointment():
             "slot_id": slot.id,
             "client_id": client.id,
             "status_id": status.id,  # позже исправить
+            "price": price_appoinment
         }
     ), 201

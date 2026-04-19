@@ -4,7 +4,7 @@ from flask import Blueprint, g, jsonify, request
 
 from app.extension import db
 from app.jwt_auth import jwt_required
-from app.models import SpecialistDocuments
+from app.models import SpecialistDocuments, Specialist
 
 moderation_bp = Blueprint("moderation", __name__)
 
@@ -23,37 +23,37 @@ def is_moderator(member_id):
     )
 
 
-@moderation_bp.route("/documents", methods=["POST"])
+@moderation_bp.route("/documents", methods=["GET"])
 @jwt_required
 def get_documents():
     """
     получение списка документов на проверку
     """
-    if not is_moderator(g.member_id):
-        return jsonify({"error": "access denied"}), 400
+    # if not is_moderator(g.member_id):
+    #     return jsonify({"error": "access denied"}), 400
 
     # получаем документы на проверке
-    docs = SpecialistDocuments.query.filter_by(verification_status="pending").order_by
-    (SpecialistDocuments.uploaded_time.desc()).all()
+    docs = SpecialistDocuments.query.filter_by(verification_status="pending").order_by(SpecialistDocuments.uploaded_time.desc()).all()
 
     result = []
 
     for doc in docs:
         result.append(
             {
-                "id": doc.id,
+                "document_id": doc.id,
                 "specialist_id": doc.specialist_id,
                 "specialist_name": f"{doc.specialist.first_name} {doc.specialist.last_name}",
-                "document_type": doc.document_type,
-                "title": doc.title,
+                "document_type": doc.document_title,
+                "title": doc.origin_name,
                 "file_url": doc.file_url,
-                "uploaded_at": doc.uploaded_at.isoformat(),
+                "uploaded_at": doc.uploaded_time.isoformat(),
+                "status": doc.verification_status
             }
         )
     return jsonify(result), 200
 
 
-@moderation_bp.route("/moderation/documents/<int:doc_id>", methods=["POST"])
+@moderation_bp.route("/documents/<int:doc_id>", methods=["POST"])
 @jwt_required
 def moderating_documents(doc_id):
     """
@@ -88,3 +88,47 @@ def moderating_documents(doc_id):
     doc.verified_by = g.member_id
     doc.verified_at = datetime.utcnow()
     db.session.commit()
+    return jsonify({
+        "success": "moderation this document compleate"
+    }),200
+    
+
+@moderation_bp.route("/specialist-on-moderation/<int:specialist_id>", methods=["POST"])
+@jwt_required
+def moderating_specs(specialist_id):
+    """
+    логика модерации специалистов
+    тело json {
+    action: например, approve
+    reason : для отказа
+    }
+    """
+    data = request.get_json()
+    action = data.get("action")
+    reason = data.get("reason")
+
+    if action not in ["approve", "reject"]:
+        return jsonify({"error": "need action"}), 400
+
+    specialist = Specialist.query.filter_by(id=specialist_id, verification_status = 'pending').first()
+
+    print(specialist)
+
+    if specialist.verification_status != "pending":
+        return jsonify({"error": "document already moderated"}), 400
+
+    if action == "approve":
+        specialist.verification_status = "approve"
+        specialist.is_approved = True
+    else:
+        if not reason:
+            return jsonify({"error": "need reason"}), 400
+        specialist.verification_status = "reject"
+        specialist.reject_reason = reason
+
+    specialist.verified_by = g.member_id
+    specialist.verified_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({
+        "success": f"moderation this specialist №{specialist_id} compleate"
+    }),200

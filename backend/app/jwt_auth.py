@@ -13,7 +13,7 @@ def jwt_required(f):
     def decorated(*args, **kwargs):
         DEBUG_BYPASS_JWT = True
         if DEBUG_BYPASS_JWT:
-            g.member_id = 1
+            g.member_id = 3 
             return f(*args, **kwargs)
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):

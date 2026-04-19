@@ -12,6 +12,7 @@ class Member(db.Model):
     timezone = db.Column(db.String(32), server_default="UTC")
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    email = db.Column(db.String(64), nullable = True) #!!! не забыть переключить на False !!!
 
     roles = db.relationship("MemberRole", back_populates="member")
     specialist = db.relationship("Specialist", uselist=False, back_populates="member")
@@ -72,11 +73,12 @@ class Specialist(db.Model):
     education = db.Column(db.String(64))
     bio = db.Column(db.Text)
     experience_years = db.Column(db.Integer)
-    base_price = db.Column(db.Integer, nullable=False, server_default='1500')
+    base_price = db.Column(db.Integer, nullable=True, server_default='1500')
     verification_status = db.Column(db.String(20), default='pending')
     is_approved = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    reject_reason = db.Column(db.String, nullable = True)
 
     member = db.relationship("Member", back_populates="specialist")
     slots = db.relationship("Slot", back_populates="specialist")
@@ -91,15 +93,15 @@ class SpecialistDocuments(db.Model):
     verified_by = db.Column(db.Integer, db.ForeignKey("member.id"))
     specialist_id = db.Column(db.Integer, db.ForeignKey("specialist.id"))
 
-    document_title = db.Column(db.String(32), nullable = False) 
+    document_title = db.Column(db.String(64), nullable = False) 
     file_url = db.Column(db.String, nullable = False)
 
     is_active = db.Column(db.Boolean, default=True)
     uploaded_time = db.Column(db.DateTime, default=datetime.utcnow)
     verified_at = db.Column(db.DateTime, nullable = True)
     verification_status = db.Column(db.String(32), nullable = False) 
-    origin_name = db.Column(db.String(32))
-    reject_reason = db.column(db.String, nullable = False)
+    origin_name = db.Column(db.String(255))
+    reject_reason = db.Column(db.String, nullable = True)
 
     # связи
     specialist = db.relationship("Specialist", back_populates="documents")

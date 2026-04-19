@@ -3,11 +3,12 @@ import secrets
 from datetime import datetime
 
 from authlib.integrations.flask_client import OAuthError
-from flask import Blueprint, current_app, jsonify, redirect, request, session
+from flask import Blueprint, current_app, jsonify, redirect, request, session, g
 
 from app.extension import db
+from app.jwt_auth import jwt_required
 from app.logto import oauth
-from app.models import Client, Member, MemberRole, Role
+from app.models import Client, Member, MemberRole, Role, Specialist
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -47,7 +48,9 @@ def callback():
     member = Member.query.filter_by(auth_id=auth_id).first()
 
     if not member:
-        member = Member(auth_id=auth_id, is_active=True, created_at=datetime.utcnow())
+        member = Member(
+            auth_id=auth_id, is_active=True, created_at=datetime.utcnow(), email=email
+        )
         db.session.add(member)
         db.session.commit()
 
@@ -79,15 +82,66 @@ def callback():
         db.session.commit()
 
     else:
-        # Пользователь уже существует – обновляем время последнего входа (если есть поле)
-        # Если в модели Member есть поле last_login_at, раскомментируйте:
-        # member.last_login_at = datetime.utcnow()
         db.session.commit()
 
     # 5. Сохраняем member.id в сессию для быстрого доступа
     session["member_id"] = member.id
 
     return redirect("http://127.0.0.1:5000/dashboard")
+
+
+@auth_bp.route("/change-role")
+@jwt_required
+def change_role():
+    data = request.get_json()
+    role_code = data.get("role")
+
+    if role_code not in ["client", "specialist", "moderator", "admin", "owner"]:
+        return jsonify({"error": "invalid role"}), 400
+
+    member_id = g.member_id
+    role = Role.query.filter_by(code=role_code).first()
+    if not role:
+        return jsonify({"error": "role not found"}), 500
+
+    MemberRole.query.filter_by(member_id=member_id).delete()
+
+    member = Member.query.get(member_id)
+    email = member.email
+    
+
+    new_role = MemberRole(
+        member_id=member_id,
+        role_id=role.id,
+        is_active=True,
+        assigned_at=datetime.utcnow(),
+    )
+    db.session.add(new_role)
+
+    if role_code in ["client", "moderator", "admin", "owner"]:
+        if not Client.query.filter_by(member_id=member_id).first():
+            client = Client(member_id=member_id, display_name=f"User{member_id}")
+            db.session.add(client)
+    elif role_code == "specialist":
+        if not Specialist.query.filter_by(member_id=member_id).first():
+            specialist = Specialist(
+                member_id=member.id,
+                first_name= email.split("@")[0],
+                last_name='',
+                specialization='',
+                base_price=1500,
+                is_approved=False,
+                verification_status='pending'
+            )
+            db.session.add(specialist)
+
+    db.session.commit()
+    return jsonify(
+        {"message": f"Role {role_code} assigned to member_id {member_id}"}
+    ), 200
+
+
+
 
 
 @auth_bp.route("/logout")

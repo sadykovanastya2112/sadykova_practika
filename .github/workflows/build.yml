@@ -67,7 +67,7 @@ jobs:
           ansible-playbook -i hosts.ini setup.yml \
           -e "ansible_port=${{ secrets.SSH_PORT }}" \
           -e "ansible_host=${{ secrets.SSH_IP }}" \
-          -e "ansible_user=root"
+          -e "ansible_user=${{ secrets.SSH_USER }}"
 
       - name: Copy docker-compose to server
         run: |

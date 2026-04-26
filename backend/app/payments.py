@@ -1,73 +1,387 @@
-import json
 import uuid
+import hashlib
+import hmac
+import base64
+from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, request, session
-from yookassa import Configuration, Payment
+from flask import Blueprint, current_app, g, jsonify, request
+from sqlalchemy.exc import SQLAlchemyError
+from yookassa import Configuration
+from yookassa import Payment as YooPayment
+
+from app.extension import db
+from app.jwt_auth import jwt_required
+from app.models import Appointment, AppointmentStatus, Client, Payment
 
 payments_bp = Blueprint("payments", __name__)
 
-# Настройка ЮКассы
-
-
+# ------------------------- Настройка ЮKassa -------------------------
 def init_yookassa():
     Configuration.configure(
         account_id=current_app.config["YOOKASSA_SHOP_ID"],
         secret_key=current_app.config["YOOKASSA_SECRET_KEY"],
     )
 
+def verify_yookassa_webhook_signature(secret_key: str, request_body: bytes, signature_header: str) -> bool:
+    """
+    Проверяет подпись вебхука ЮKassa (HMAC-SHA256).
+    secret_key – ваш секретный ключ из личного кабинета.
+    request_body – тело запроса в байтах.
+    signature_header – значение заголовка 'X-Yookassa-Signature'.
+    """
+    try:
+        expected_signature = base64.b64encode(
+            hmac.new(secret_key.encode('utf-8'), request_body, hashlib.sha256).digest()
+        ).decode('utf-8')
+        return hmac.compare_digest(expected_signature, signature_header)
+    except Exception:
+        return False
 
+# ------------------------- Endpoint создания платежа -------------------------
 @payments_bp.route("/create-payment", methods=["POST"])
+@jwt_required
 def create_payment():
+    """
+    Создание платежа в ЮKassa для указанного бронирования.
+
+    ---
+    tags:
+      - Payments
+    summary: Создать платёж
+    description: Генерирует ссылку на оплату через ЮKassa для бронирования со статусом "pending_payment".
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - appointment_id
+          properties:
+            appointment_id:
+              type: integer
+              description: ID бронирования (Appointment)
+    security:
+      - BearerAuth: []
+    responses:
+      200:
+        description: Платёж создан
+        schema:
+          type: object
+          properties:
+            confirmation_url:
+              type: string
+              description: Ссылка для перенаправления на оплату
+            payment_id:
+              type: string
+            appointment_id:
+              type: integer
+      400:
+        description: Не передан appointment_id
+      403:
+        description: Клиент не найден или бронь не принадлежит клиенту
+      404:
+        description: Бронирование не найдено
+      409:
+        description: Бронирование уже не в статусе ожидания оплаты
+      500:
+        description: Ошибка при инициализации ЮKassa или создании платежа
+    """
+    data = request.get_json()
+    if not data or "appointment_id" not in data:
+        return jsonify({"error": "appointment_id is required"}), 400
+
+    appointment_id = data["appointment_id"]
+
+    # получаем клиента
+    member_id = g.member_id
+    client = Client.query.filter_by(member_id=member_id).first()
+    if not client:
+        return jsonify({"error": "Client profile not found"}), 403
+
+    # находим бронирование
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({"error": "Appointment not found"}), 404
+    if appointment.client_id != client.id:
+        return jsonify({"error": "Not your appointment"}), 403
+
+    # проверяем статус оплаты
+    pending_status = AppointmentStatus.query.filter_by(code="pending_payment").first()
+    if not pending_status:
+        return jsonify({"error": "Status 'pending_payment' not found in DB"}), 500
+    if appointment.status_id != pending_status.id:
+        return jsonify({"error": "Appointment is not pending payment"}), 409
+
+    price = appointment.price
 
     try:
-        # Создаёт тестовый платёж и возвращает ссылку на оплату
         init_yookassa()
-        # Генерируем уникальный idempotence key
-        idempotence_key = str(uuid.uuid4())
-        # Создание платежа
-        payment = Payment.create(
+    except Exception:
+        return jsonify({"error": "Payment service init failed"}), 500
+
+    idempotence_key = str(uuid.uuid4())
+
+    try:
+        yoo_payment = YooPayment.create(
             {
-                "amount": {"value": "100.00", "currency": "RUB"},
+                "amount": {"value": f"{price:.2f}", "currency": "RUB"},
                 "confirmation": {
                     "type": "redirect",
-                    "return_url": "http://127.0.0.1:5000/payment-success",
+                    "return_url": f"http://127.0.0.1:5000/payment-success?appointment_id={appointment_id}",
                 },
                 "capture": True,
-                "description": "Проверка тестового платежа",
+                "description": f"Оплата сессии #{appointment_id}",
             },
             idempotence_key,
         )
-        # Сохранение в сессии
-        session["last_payment_id"] = payment.id
-        # Возвращение ссылки для редиректа
-
-        response_data = {
-            "confirmation_url": payment.confirmation.confirmation_url,
-            "payment_id": payment.id,
-        }
-        return jsonify(response_data)
     except Exception as e:
-        print(f"Ошибка создания платежа: {e}")
-        import traceback
+        return jsonify({"error": f"YooKassa error: {str(e)}"}), 500
 
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+    payment = Payment(
+        appointment_id=appointment.id,
+        provider="yookassa",
+        provider_payment_id=yoo_payment.id,
+        amount=price,
+        currency="RUB",
+        status="pending",
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(payment)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "confirmation_url": yoo_payment.confirmation.confirmation_url,
+            "payment_id": yoo_payment.id,
+            "appointment_id": appointment.id,
+        }
+    ), 200
 
 
+# ------------------------- Endpoint успешной оплаты (редирект) -------------------------
 @payments_bp.route("/payment-success")
 def payment_success():
-    # редирект на страницу с успешной оплатой
+    """
+    Страница успешной оплаты (редирект).
+
+    ---
+    tags:
+      - Payments
+    summary: Подтверждение оплаты
+    description: Возвращает JSON-сообщение об успешном завершении тестового платежа. Используется как return_url после оплаты.
+    responses:
+      200:
+        description: Успешное подтверждение
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+    """
     return jsonify({"message": "Тестовый платёж прошёл успешно"})
 
 
+# ------------------------- Endpoint опроса статуса (polling) -------------------------
+@payments_bp.route("/check/<string:payment_id>", methods=["GET"])
+@jwt_required
+def check_payment(payment_id):
+    """
+    Опрос статуса платежа (polling).
+
+    ---
+    tags:
+      - Payments
+    summary: Проверить статус платежа
+    description: Запрашивает актуальный статус платежа в ЮKassa и синхронизирует его с локальной БД.
+    parameters:
+      - name: payment_id
+        in: path
+        type: string
+        required: true
+        description: Идентификатор платежа в ЮKassa (provider_payment_id)
+    security:
+      - BearerAuth: []
+    responses:
+      200:
+        description: Актуальный статус платежа
+        schema:
+          type: object
+          properties:
+            payment_id:
+              type: string
+            status:
+              type: string
+            amount:
+              type: integer
+            currency:
+              type: string
+            paid_at:
+              type: string
+              format: date-time
+              nullable: true
+      403:
+        description: Доступ запрещён (платёж не принадлежит текущему клиенту)
+      404:
+        description: Платёж не найден локально или в ЮKassa
+      500:
+        description: Ошибка при запросе к ЮKassa
+    """
+    # Находим локальный платёж
+    payment = Payment.query.filter_by(provider_payment_id=payment_id).first()
+    if not payment:
+        return jsonify({"error": "Payment not found"}), 404
+
+    # Проверяем права: только клиент, создавший бронирование, или администратор (можно расширить)
+    member_id = g.member_id
+    client = Client.query.filter_by(member_id=member_id).first()
+    appointment = Appointment.query.get(payment.appointment_id)
+    if not client or appointment.client_id != client.id:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Запрашиваем статус у ЮKassa
+    try:
+        init_yookassa()
+        yoo_payment = YooPayment.find_one(payment_id)
+        if not yoo_payment:
+            return jsonify({"error": "Payment not found in YooKassa"}), 404
+        new_status = yoo_payment.status  # 'pending', 'waiting_for_capture', 'succeeded', 'canceled'
+    except Exception as e:
+        return jsonify({"error": f"Failed to query YooKassa: {str(e)}"}), 500
+
+    # Обновляем локальный статус, если изменился
+    if payment.status != new_status:
+        payment.status = new_status
+        if new_status == 'succeeded':
+            payment.paid_at = datetime.utcnow()
+            if appointment:
+                paid_status = AppointmentStatus.query.filter_by(code='paid').first()
+                if paid_status:
+                    appointment.status_id = paid_status.id
+        elif new_status == 'canceled':
+            # Можно вернуть слот в доступное состояние? Не требуется.
+            pass
+        db.session.commit()
+
+    return jsonify({
+        "payment_id": payment.provider_payment_id,
+        "status": payment.status,
+        "amount": payment.amount,
+        "currency": payment.currency,
+        "paid_at": payment.paid_at.isoformat() if payment.paid_at else None
+    }), 200
+
+
+# ------------------------- Обработчик вебхуков ЮKassa -------------------------
 @payments_bp.route("/webhook/yookassa", methods=["POST"])
 def yookassa_webhook():
     """
-    Обработчик уведомлений от ЮKassa (меняет статус платежа).
-    """
-    event_json = request.get_json()
-    print("Webhook received:", json.dumps(event_json, indent=2))
+    Обработчик вебхуков от ЮKassa.
 
-    # Здесь можно проверить объект и обновить статус платежа (позже с БД)
-    # Сейчас просто логируем
-    return "", 200
+    ---
+    tags:
+      - Payments
+    summary: Приём уведомлений ЮKassa
+    description: Принимает уведомления об изменении статуса платежа, проверяет подпись и обновляет локальные статусы платежа и бронирования.
+    parameters:
+      - name: X-Yookassa-Signature
+        in: header
+        type: string
+        required: true
+        description: Подпись вебхука для верификации
+    security: []
+    responses:
+      200:
+        description: Уведомление обработано
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+            event:
+              type: string
+      401:
+        description: Неверная подпись
+      400:
+        description: Неверный JSON
+    """
+    # Получаем тело запроса в сыром виде для проверки подписи
+    raw_body = request.get_data()
+    signature_header = request.headers.get('X-Yookassa-Signature', '')
+
+    secret_key = current_app.config.get("YOOKASSA_SECRET_KEY")
+    if not verify_yookassa_webhook_signature(secret_key, raw_body, signature_header):
+        # Вместо логгера просто печатаем в консоль (или можно игнорировать)
+        print("Invalid webhook signature")
+        return jsonify({"error": "Invalid signature"}), 401
+
+    try:
+        event_json = request.get_json()
+    except Exception:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    event = event_json.get("event")
+    obj = event_json.get("object", {})
+
+    if event == "payment.succeeded":
+        process_successful_payment(obj)
+        return jsonify({"status": "ok", "event": "payment.succeeded"}), 200
+    elif event == "payment.waiting_for_capture":
+        return jsonify({"status": "ok", "event": "payment.waiting_for_capture"}), 200
+    elif event == "payment.canceled":
+        provider_payment_id = obj.get("id")
+        if provider_payment_id:
+            payment = Payment.query.filter_by(provider_payment_id=provider_payment_id).first()
+            if payment and payment.status != "canceled":
+                payment.status = "canceled"
+                db.session.commit()
+        return jsonify({"status": "ok", "event": "payment.canceled"}), 200
+    elif event == "refund.succeeded":
+        return jsonify({"status": "ok", "event": "refund.succeeded"}), 200
+    elif event == "payment.refunded":
+        return jsonify({"status": "ok", "event": "payment.refunded"}), 200
+    else:
+        return jsonify({"status": "ignored", "event": event}), 200
+
+
+# ------------------------- Вспомогательная функция для успешного платежа -------------------------
+def process_successful_payment(payment_data: dict):
+    """Обновляет статус платежа и бронирования после успешной оплаты."""
+    provider_payment_id = payment_data.get("id")
+    if not provider_payment_id:
+        print("Payment succeeded webhook missing 'id'")
+        return
+
+    payment = Payment.query.filter_by(provider_payment_id=provider_payment_id).first()
+    if not payment:
+        print(f"Payment with provider_id {provider_payment_id} not found in DB")
+        return
+
+    if payment.status == "succeeded":
+        # уже обработан
+        return
+
+    payment.status = "succeeded"
+    payment.paid_at = datetime.utcnow()
+
+    paid_amount = payment_data.get("amount", {}).get("value")
+    if paid_amount:
+        paid_amount_kop = int(float(paid_amount) * 100)
+        if paid_amount_kop != payment.amount:
+            payment.amount = paid_amount_kop
+
+    paid_currency = payment_data.get("amount", {}).get("currency")
+    if paid_currency:
+        payment.currency = paid_currency
+
+    appointment = Appointment.query.get(payment.appointment_id)
+    if appointment:
+        paid_status = AppointmentStatus.query.filter_by(code="paid").first()
+        if paid_status:
+            appointment.status_id = paid_status.id
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        print(f"DB error while processing payment {provider_payment_id}")

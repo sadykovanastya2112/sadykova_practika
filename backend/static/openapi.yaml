@@ -1,0 +1,843 @@
+openapi: 3.0.0
+info:
+  title: API Безопасный контакт
+  description: Документация API для платформы психологической помощи
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:5000
+    description: Локальный сервер разработки
+  - url: https://api.safe-contact.duckdns.org
+    description: Продакшен сервер
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        client_id:
+          type: integer
+        slot_id:
+          type: integer
+        status_id:
+          type: integer
+        price:
+          type: integer
+        external_booking_id:
+          type: string
+        booking_provider:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        member_id:
+          type: integer
+        display_name:
+          type: string
+        bio:
+          type: string
+        avatar_url:
+          type: string
+        is_anonymous:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Specialist:
+      type: object
+      properties:
+        id:
+          type: integer
+        member_id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        specialization:
+          type: string
+        education:
+          type: string
+        bio:
+          type: string
+        experience_years:
+          type: integer
+        base_price:
+          type: integer
+        photo_url:
+          type: string
+        verification_status:
+          type: string
+        is_approved:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Slot:
+      type: object
+      properties:
+        id:
+          type: integer
+        specialist_id:
+          type: integer
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        external_id:
+          type: string
+        provider:
+          type: string
+        price:
+          type: integer
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        appointment_id:
+          type: integer
+        provider:
+          type: string
+        provider_payment_id:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        paid_at:
+          type: string
+          format: date-time
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+        auth_id:
+          type: string
+        email:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        last_login_at:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            type: string
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+        specialist_id:
+          type: integer
+        document_type:
+          type: string
+        title:
+          type: string
+        file_url:
+          type: string
+        verification_status:
+          type: string
+        is_active:
+          type: boolean
+        uploaded_at:
+          type: string
+          format: date-time
+paths:
+  /auth/login:
+    get:
+      summary: Начать аутентификацию через Logto
+      tags:
+        - Auth
+      responses:
+        '302':
+          description: Редирект на Logto
+  /auth/callback:
+    get:
+      summary: Callback от Logto
+      tags:
+        - Auth
+      parameters:
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '400':
+          description: Неверный state
+        '302':
+          description: Редирект на дашборд
+  /auth/change-role:
+    post:
+      summary: Сменить роль пользователя
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [client, specialist, moderator, admin, owner]
+      responses:
+        '200':
+          description: Роль изменена
+  /auth/logout:
+    post:
+      summary: Выйти из системы
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Успешный выход
+  /auth/test-token:
+    post:
+      summary: Тестовый эндпоинт для получения JWT (только для разработки)
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: JWT токен
+  /documents/upload:
+    post:
+      summary: Загрузить документ (специалист)
+      tags:
+        - Documents
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, document_type, title]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                document_type:
+                  type: string
+                  enum: [diploma, certificate]
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Документ загружен
+  /slots/get:
+    get:
+      summary: Получить все слоты текущего специалиста
+      tags:
+        - Slots
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Список слотов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+  /slots/create:
+    post:
+      summary: Создать слот(ы) (специалист)
+      tags:
+        - Slots
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Slot'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/Slot'
+      responses:
+        '201':
+          description: Слот(ы) создан(ы)
+  /slots/update/{slot_id}:
+    put:
+      summary: Обновить слот (специалист)
+      tags:
+        - Slots
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slot_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_at:
+                  type: string
+                  format: date-time
+                end_at:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Слот обновлён
+  /slots/delete/{slot_id}:
+    delete:
+      summary: Удалить слот (специалист)
+      tags:
+        - Slots
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: slot_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Слот удалён
+  /clients/get-slots:
+    get:
+      summary: Получить свободные слоты специалиста (клиент)
+      tags:
+        - Clients
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: specialist_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список свободных слотов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    start_at:
+                      type: string
+                      format: date-time
+                    end_at:
+                      type: string
+                      format: date-time
+  /clients/make-appointment:
+    post:
+      summary: Забронировать слот (клиент)
+      tags:
+        - Clients
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slot_id, specialist_id]
+              properties:
+                slot_id:
+                  type: integer
+                specialist_id:
+                  type: integer
+      responses:
+        '201':
+          description: Бронирование создано
+          /specialists:
+    get:
+      summary: Получить список специалистов (каталог)
+      tags:
+        - Specialists
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+        - name: specialization
+          in: query
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          schema:
+            type: integer
+        - name: max_price
+          in: query
+          schema:
+            type: integer
+        - name: min_rating
+          in: query
+          schema:
+            type: number
+        - name: min_experience
+          in: query
+          schema:
+            type: integer
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [price, experience, name, rating]
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: OK
+  /specialists/profile/{specialist_id}:
+    get:
+      summary: Получить полный профиль специалиста
+      tags:
+        - Specialists
+      parameters:
+        - name: specialist_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /specialists/me:
+    get:
+      summary: Получить свой профиль (специалист)
+      tags:
+        - Specialists
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /specialists/update:
+    put:
+      summary: Обновить свой профиль (специалист)
+      tags:
+        - Specialists
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                specialization:
+                  type: string
+                bio:
+                  type: string
+                base_price:
+                  type: integer
+                photo_url:
+                  type: string
+                experience_years:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+  /specialists/me/documents:
+    get:
+      summary: Получить свои документы (специалист)
+      tags:
+        - Specialists
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /payments/create-payment:
+    post:
+      summary: Создать платёж
+      tags:
+        - Payments
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appointment_id]
+              properties:
+                appointment_id:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+  /payments/check/{payment_id}:
+    get:
+      summary: Проверить статус платежа (polling)
+      tags:
+        - Payments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /payments/webhook/yookassa:
+    post:
+      summary: Webhook от ЮKassa
+      tags:
+        - Payments
+      responses:
+        '200':
+          description: OK
+  /moderation/documents:
+    get:
+      summary: Получить документы на модерацию
+      tags:
+        - Moderation
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /moderation/documents/{doc_id}:
+    post:
+      summary: Принять решение по документу
+      tags:
+        - Moderation
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /moderation/approve/document/{doc_id}:
+    post:
+      summary: Одобрить документ
+      tags:
+        - Moderation
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /moderation/reject/document/{doc_id}:
+    post:
+      summary: Отклонить документ
+      tags:
+        - Moderation
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /moderation/specialists/{specialist_id}:
+    post:
+      summary: Модерация специалиста
+      tags:
+        - Moderation
+      parameters:
+        - name: specialist_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: OK
+  /admin/users:
+    get:
+      summary: Список пользователей (админ)
+      tags:
+        - Admin
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+  /admin/users/{user_id}:
+    get:
+      summary: Детальная информация о пользователе
+      tags:
+        - Admin
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /admin/users/{user_id}/toggle-block:
+    post:
+      summary: Заблокировать/разблокировать пользователя
+      tags:
+        - Admin
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /admin/users/{user_id}/roles:
+    put:
+      summary: Изменить роли пользователя
+      tags:
+        - Admin
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roles]
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+  /admin/stats:
+    get:
+      summary: Статистика платформы
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: OK
+  /admin/commission:
+    get:
+      summary: Получить текущую комиссию
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Установить комиссию
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [percent]
+              properties:
+                percent:
+                  type: number
+      responses:
+        '200':
+          description: OK
+  /calendars/slots:
+    get:
+      summary: Получить доступные слоты из Cal.com
+      tags:
+        - Calendars
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+  /calendars/book:
+    post:
+      summary: Создать бронирование в Cal.com
+      tags:
+        - Calendars
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appointment_id]
+              properties:
+                appointment_id:
+                  type: integer
+      responses:
+        '200':
+          description: OK
+  /calendars/webhook:
+    post:
+      summary: Webhook от Cal.com
+      tags:
+        - Calendars
+      responses:
+        '200':
+          description: OK

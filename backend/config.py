@@ -21,6 +21,9 @@ class Config():
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'}
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
-
+    CALCOM_API_KEY = os.getenv('CALCOM_API_KEY')
+    CALCOM_API_URL = os.getenv('CALCOM_API_URL')
+    CALCOM_EVENT_TYPE_SLUG = os.getenv('CALCOM_EVENT_TYPE_SLUG')
+    CALCOM_WEBHOOK_SECRET = os.getenv('CALCOM_WEBHOOK_SECRET')
 
     

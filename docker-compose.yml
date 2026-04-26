@@ -11,7 +11,6 @@ services:
     container_name: sc-backend
     restart: always
     environment:
-      # Используем переменные, которые придут из GitHub Secrets
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     depends_on:
       db:

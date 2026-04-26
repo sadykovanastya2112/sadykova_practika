@@ -21,7 +21,18 @@
       file:
         path: /opt/infra
         state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0755"
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Reset connection to apply group changes
+      meta: reset_connection
 
     - name: Create 'internet' docker network
       docker_network:

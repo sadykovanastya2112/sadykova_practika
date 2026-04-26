@@ -71,11 +71,11 @@ jobs:
 
       - name: Copy docker-compose to server
         run: |
-          scp -P ${{ secrets.SSH_PORT }} docker-compose.yml root@${{ secrets.SSH_IP }}:/opt/infra/docker-compose.yml
+          scp -P ${{ secrets.SSH_PORT }} docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}:/opt/infra/docker-compose.yml
 
       - name: Deploy Containers
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} root@${{ secrets.SSH_IP }} "
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} "
             cd /opt/infra && \
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
             

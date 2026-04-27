@@ -12,6 +12,7 @@ class Member(db.Model):
     timezone = db.Column(db.String(32), server_default="UTC")
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    email = db.Column(db.String(64), nullable = True) #!!! не забыть переключить на False !!!
 
     roles = db.relationship("MemberRole", back_populates="member")
     specialist = db.relationship("Specialist", uselist=False, back_populates="member")
@@ -68,17 +69,65 @@ class Specialist(db.Model):
     photo_url = db.Column(db.String)
     first_name = db.Column(db.String(32))
     last_name = db.Column(db.String(32))
+    specialization = db.Column(db.String(64))
+    education = db.Column(db.String(64))
     bio = db.Column(db.Text)
     experience_years = db.Column(db.Integer)
-    base_price = db.Column(db.Integer)
-
-    is_visible = db.Column(db.Boolean, default=True)
+    base_price = db.Column(db.Integer, nullable=True, server_default='1500')
+    verification_status = db.Column(db.String(20), default='pending')
+    is_approved = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    reject_reason = db.Column(db.String, nullable = True)
 
     member = db.relationship("Member", back_populates="specialist")
     slots = db.relationship("Slot", back_populates="specialist")
+    documents = db.relationship("SpecialistDocuments", back_populates="specialist")
 
+
+class SpecialistDocuments(db.Model):
+    __tablename__ = 'specialistdocument'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    verified_by = db.Column(db.Integer, db.ForeignKey("member.id"))
+    specialist_id = db.Column(db.Integer, db.ForeignKey("specialist.id"))
+
+    document_title = db.Column(db.String(64), nullable = False) 
+    file_url = db.Column(db.String, nullable = False)
+
+    is_active = db.Column(db.Boolean, default=True)
+    uploaded_time = db.Column(db.DateTime, default=datetime.utcnow)
+    verified_at = db.Column(db.DateTime, nullable = True)
+    verification_status = db.Column(db.String(32), nullable = False) 
+    origin_name = db.Column(db.String(255))
+    reject_reason = db.Column(db.String, nullable = True)
+
+    # связи
+    specialist = db.relationship("Specialist", back_populates="documents")
+
+    def __repr__(self):
+        return f'<Document {self.title}>'
+
+
+
+
+class Review(db.Model):
+    __tablename__ = 'review'
+
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), unique=True, nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    specialist_id = db.Column(db.Integer, db.ForeignKey('specialist.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)          # 1–5
+    comment = db.Column(db.Text, nullable=True)
+    is_approved = db.Column(db.Boolean, default=False)      # после модерации
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # связи
+    appointment = db.relationship('Appointment', backref=db.backref('review', uselist=False))
+    client = db.relationship('Client', backref='reviews')
+    specialist = db.relationship('Specialist', backref='reviews')
 
 class Client(db.Model):
     __tablename__ = "client"
@@ -140,6 +189,8 @@ class Slot(db.Model):
         db.Integer, db.ForeignKey("specialist.id", ondelete="CASCADE")
     )
 
+    price = db.Column(db.Float, nullable=False, server_default='1500')
+
     start_at = db.Column(db.DateTime)
     end_at = db.Column(db.DateTime)
 
@@ -171,6 +222,7 @@ class Appointment(db.Model):
     external_booking_id = db.Column(db.String)  # Cal.com booking ID
     booking_provider = db.Column(db.String, default="cal.com")
 
+    price = db.Column(db.Float, nullable=False, server_default='1500')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     slot = db.relationship("Slot", back_populates="appointments")

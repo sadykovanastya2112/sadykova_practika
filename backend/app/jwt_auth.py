@@ -1,11 +1,13 @@
 from functools import wraps
-from flask import request, jsonify, current_app, g
+
 import jwt
-from jwt import PyJWKClient
 import requests_cache
+from flask import current_app, g, jsonify, request, session
+from jwt import PyJWKClient
+
 from app.models import Member
 
-requests_cache.install_cache('jwks_cache', expire_after=86400)
+requests_cache.install_cache("jwks_cache", expire_after=86400)
 
 
 def jwt_required(f):
@@ -13,11 +15,13 @@ def jwt_required(f):
     def decorated(*args, **kwargs):
         DEBUG_BYPASS_JWT = True
         if DEBUG_BYPASS_JWT:
-            g.member_id = 1
+            g.member_id = 3
+            session['member_id'] = 3   # также сохраняем в сессию для единообразия с require_role
             return f(*args, **kwargs)
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
-            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
+
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Missing or invalid Authorization header"}), 401
         token = auth_header[7:]
 
         try:
@@ -27,25 +31,57 @@ def jwt_required(f):
             payload = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=['RS256'],
-                audience=current_app.config['LOGTO_CLIENT_ID'],
-                options={'verify_exp': True}
+                algorithms=["RS256"],
+                audience=current_app.config["LOGTO_CLIENT_ID"],
+                options={"verify_exp": True},
             )
             request.jwt_payload = payload
-            request.logto_user_id = payload['sub']
-            request.logto_roles = payload.get('https://logto.io/claims/roles', [])
+            request.logto_user_id = payload["sub"]
+            request.logto_roles = payload.get("https://logto.io/claims/roles", [])
 
-            auth_id = payload['sub']
+            auth_id = payload["sub"]
             member = Member.query.filter_by(auth_id=auth_id).first()
             if not member:
-                return jsonify({'error': 'User not found'}), 401
+                return jsonify({"error": "User not found"}), 401
             g.member_id = member.id
+            session['member_id'] = member.id   # синхронизируем с сессией
+
         except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expired'}), 401
+            return jsonify({"error": "Token expired"}), 401
         except jwt.InvalidTokenError as e:
-            return jsonify({'error': f'Invalid token: {str(e)}'}), 401
+            return jsonify({"error": f"Invalid token: {str(e)}"}), 401
         except Exception as e:
-            return jsonify({f"error': 'Authentication error\n{str(e)}"}), 401
+            return jsonify({"error": f"Authentication error\n{str(e)}"}), 401
 
         return f(*args, **kwargs)
+
     return decorated
+
+
+def require_role(role_name):
+    """
+    Декоратор для проверки роли пользователя.
+    Использует g.member_id (предпочтительно) или session['member_id'].
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Получаем member_id из g (если установлен) или из сессии
+            member_id = getattr(g, 'member_id', None)
+            if not member_id:
+                member_id = session.get('member_id')
+            if not member_id:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            member = Member.query.get(member_id)
+            if not member:
+                return jsonify({"error": "User not found"}), 401
+
+            # Проверяем наличие требуемой роли (роли хранятся в member.roles)
+            roles_codes = [r.code for r in member.roles]
+            if role_name not in roles_codes:
+                return jsonify({"error": "Forbidden"}), 403
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator

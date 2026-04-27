@@ -6,7 +6,6 @@ import sys
 
 app = create_app()
 
-sys.path.insert(0, '/workspaces/safe-contact-1/backend')
 
 @app.route("/ping")
 def ping():

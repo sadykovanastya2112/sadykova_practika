@@ -17,6 +17,7 @@ from app.payments import payments_bp
 from app.slots import slots_bp
 from app.specialist import specialist_bp
 from app.admin import admin_bp
+from app.calendars import cal_bp
 
 
 def create_app(config_Class=Config):
@@ -69,14 +70,15 @@ def create_app(config_Class=Config):
 
 
     # регистрация blueprints
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(specialist_bp)
-    app.register_blueprint(payments_bp)
-    app.register_blueprint(slots_bp)
-    app.register_blueprint(clients_bp)
-    app.register_blueprint(moderation_bp)
-    app.register_blueprint(documents_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(specialist_bp, url_prefix='/specialist')
+    app.register_blueprint(payments_bp,url_prefix='/payments')
+    app.register_blueprint(slots_bp, url_prefix='/slots')
+    app.register_blueprint(clients_bp, url_prefix='/clients')
+    app.register_blueprint(moderation_bp, url_prefix='/moderation')
+    app.register_blueprint(documents_bp, url_prefix='/documents')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(cal_bp, url_prefix='/calendars')
 
     # @app.errorhandler(Exception)
     # def hendle_experere(e):

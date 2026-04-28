@@ -30,52 +30,7 @@ def get_current_specialist(member_id):
 @documents_bp.route('/upload', methods=['POST'])
 @jwt_required
 def upload_document():
-    """
-    Загрузка документа специалистом.
-
-    ---
-    tags:
-      - Documents
-    summary: Загрузить документ
-    description: Позволяет специалисту загрузить документ (диплом, сертификат) для верификации. Файл сохраняется на сервере, информация о нём — в БД.
-    parameters:
-      - name: file
-        in: formData
-        type: file
-        required: true
-        description: Загружаемый файл (разрешённые типы: pdf, jpg, jpeg, png, doc, docx)
-      - name: document_type
-        in: formData
-        type: string
-        required: true
-        description: Тип документа (diploma, certificate)
-      - name: title
-        in: formData
-        type: string
-        required: true
-        description: Название документа
-    security:
-      - BearerAuth: []
-    responses:
-      201:
-        description: Документ успешно загружен
-        schema:
-          type: object
-          properties:
-            id:
-              type: integer
-            file_url:
-              type: string
-            status:
-              type: string
-              example: pending
-      400:
-        description: Неверный запрос (отсутствует файл, неверный тип файла, отсутствуют поля)
-      401:
-        description: Неавторизован
-      403:
-        description: Пользователь не является специалистом
-    """
+    
     # Получение специалиста
     member_id = g.member_id
     specialist, error, status = get_current_specialist(member_id)

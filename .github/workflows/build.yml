@@ -72,7 +72,7 @@ jobs:
       - name: Copy docker-compose to server
         run: |
           scp -P ${{ secrets.SSH_PORT }} docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }}:/opt/infra/docker-compose.yml
-        
+
       - name: Deploy Containers
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} "
@@ -84,6 +84,10 @@ jobs:
             export DB_NAME='${{ secrets.DB_NAME }}' && \
             export PGADMIN_EMAIL='${{ secrets.PGADMIN_EMAIL }}' && \
             export PGADMIN_PASSWORD='${{ secrets.PGADMIN_PASSWORD }}' && \
+            export LOGTO_CLIENT_ID='${{ secrets.LOGTO_CLIENT_ID }}' && \
+            export LOGTO_CLIENT_SECRET='${{ secrets.LOGTO_CLIENT_SECRET }}' && \
+            export LOGTO_ISSUER='${{ secrets.LOGTO_ISSUER }}' && \
+            export LOGTO_REDIRECT_URI='${{ secrets.LOGTO_REDIRECT_URI }}' && \
             
             docker compose pull && \
             docker compose up -d --remove-orphans

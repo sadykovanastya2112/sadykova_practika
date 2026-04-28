@@ -5,7 +5,7 @@ import { AccordionContent, Accordion, AccordionHeader, AccordionPanel } from 'pr
 
 <template>
   <section class="max-w-3xl mx-auto w-full flex flex-col gap-8">
-    <h2 class="text-4xl font-bold text-center dark:text-white">FAQ</h2>
+    <h2>FAQ</h2>
     <Accordion :value="['1']" multiple>
       <AccordionPanel
         v-for="faq in faqData"

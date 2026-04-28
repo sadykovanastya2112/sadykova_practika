@@ -12,6 +12,13 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      # Настройки Logto
+      - LOGTO_CLIENT_ID=tav5btfloqrfq3l6u7hsg
+      - LOGTO_CLIENT_SECRET=Q4Ud5gKHzkNm3KUoAB8ZmdVgroT9pALS
+      - LOGTO_ISSUER=https://3jocgf.logto.app/oidc
+      - LOGTO_REDIRECT_URI=https://api.safe-contact.duckdns.org/auth/callback
+      # Секретный ключ Flask (обязателен, замените на свой надёжный)
+      - SECRET_KEY=4ae28ee12d16ee3be4b70b222bc3222d66fb0c68f24a144b91010015e40b01bc
     depends_on:
       db:
         condition: service_healthy

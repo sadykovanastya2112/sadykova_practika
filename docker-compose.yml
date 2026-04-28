@@ -12,6 +12,10 @@ services:
     restart: always
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - LOGTO_CLIENT_ID=${LOGTO_CLIENT_ID}
+      - LOGTO_CLIENT_SECRET=${LOGTO_CLIENT_SECRET}
+      - LOGTO_ISSUER=${LOGTO_ISSUER}
+      - LOGTO_REDIRECT_URI=${LOGTO_REDIRECT_URI}
     depends_on:
       db:
         condition: service_healthy
@@ -27,10 +31,6 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
-      - LOGTO_CLIENT_ID=${LOGTO_CLIENT_ID}
-      - LOGTO_CLIENT_SECRET=${LOGTO_CLIENT_SECRET}
-      - LOGTO_ISSUER=${LOGTO_ISSUER}
-      - LOGTO_REDIRECT_URI=${LOGTO_REDIRECT_URI}
     volumes:
       - sc_db_data:/var/lib/postgresql/data
     healthcheck:

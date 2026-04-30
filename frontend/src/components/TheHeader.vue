@@ -5,10 +5,9 @@ import { Button } from 'primevue'
 import { ref } from 'vue'
 
 const items = [
-  { label: 'Главная' },
-  { label: 'Каталог' },
-  { label: 'Личный кабинет' },
-  { label: 'Личный кабинет' },
+  { label: 'Главная', route: '/' },
+  { label: 'Каталог', route: '/catalog' },
+  { label: 'Личный кабинет', route: '/dashboard' },
 ]
 const menuComponent = ref(null)
 

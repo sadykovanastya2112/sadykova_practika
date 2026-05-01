@@ -22,7 +22,8 @@ flask-marshmallow
 Flask-Migrate         
 Flask-Session            
 flask-smorest            
-Flask-SQLAlchemy       
+Flask-SQLAlchemy
+filetype       
 greenlet               
 idna                     
 itsdangerous              

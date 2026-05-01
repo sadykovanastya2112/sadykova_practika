@@ -15,7 +15,7 @@ class Member(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     email = db.Column(
-        db.String(64), nullable=False
+        db.String(64), nullable=True
     )  #!!! не забыть переключить на False !!!
     last_active_role = db.Column(db.String(20), nullable=True)
 

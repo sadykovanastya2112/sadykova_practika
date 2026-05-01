@@ -24,43 +24,6 @@ def get_current_client(member_id):
 def get_available_slots():
     """
     Получение свободных слотов из Cal.com.
-
-    ---
-    tags:
-      - Calendars
-    summary: Получить доступные слоты
-    description: Возвращает список свободных временных слотов из Cal.com для заданного типа события (eventTypeSlug).
-    parameters:
-      - name: start
-        in: query
-        type: string
-        format: date
-        required: true
-        description: Дата начала периода (ISO 8601, например, 2025-05-01)
-      - name: end
-        in: query
-        type: string
-        format: date
-        required: true
-        description: Дата окончания периода (ISO 8601)
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: object
-          properties:
-            slots:
-              type: array
-              items:
-                type: object
-                properties:
-                  start:
-                    type: string
-                    format: date-time
-      400:
-        description: Отсутствуют параметры start или end
-      500:
-        description: Ошибка при обращении к Cal.com
     """
     start_date = request.args.get("start")
     end_date = request.args.get("end")
@@ -80,48 +43,6 @@ def get_available_slots():
 def create_cal_booking():
     """
     Создание бронирования в Cal.com после подтверждения записи клиентом.
-
-    ---
-    tags:
-      - Calendars
-    summary: Создать бронирование в Cal.com
-    description: Принимает идентификатор бронирования (`appointment_id`) и создаёт соответствующее событие в Cal.com, сохраняя полученный external_booking_id.
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          required:
-            - appointment_id
-          properties:
-            appointment_id:
-              type: integer
-              description: ID бронирования в локальной системе
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Бронирование успешно создано в Cal.com
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            cal_booking_uid:
-              type: string
-            cal_booking_id:
-              type: string
-      400:
-        description: Не передан appointment_id или неверный формат
-      403:
-        description: Доступ запрещён (не ваш клиент)
-      404:
-        description: Бронирование или слот не найдены
-      409:
-        description: Бронирование уже не в статусе ожидания оплаты
-      500:
-        description: Ошибка при создании бронирования в Cal.com
     """
     data = request.get_json()
     if not data or "appointment_id" not in data:
@@ -190,32 +111,6 @@ def create_cal_booking():
 def cal_webhook():
     """
     Обработчик вебхуков от Cal.com (уведомления о создании, оплате, отмене).
-
-    ---
-    tags:
-      - Calendars
-    summary: Обработка вебхуков Cal.com
-    description: Принимает уведомления от Cal.com (например, об успешной оплате или отмене) и обновляет статус соответствующего бронирования в локальной БД.
-    parameters:
-      - name: X-Cal-Signature-256
-        in: header
-        type: string
-        required: false
-        description: Подпись вебхука для верификации
-    security: []
-    responses:
-      200:
-        description: Уведомление обработано (или проигнорировано)
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              example: ok
-      401:
-        description: Неверная подпись вебхука
-      400:
-        description: Неверный JSON или отсутствуют данные
     """
     raw_data = request.get_data()
     signature = request.headers.get("X-Cal-Signature-256")

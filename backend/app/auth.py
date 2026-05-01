@@ -107,7 +107,7 @@ def callback():
     else:
         db.session.commit()
 
-    roles = [r.code for r in member.roles]
+    roles = [r.role.code for r in member.roles]
     if not roles:
         return jsonify({"error": "WTF n0 roles"}), 500
     if len(roles) == 1:

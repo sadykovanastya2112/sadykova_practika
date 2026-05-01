@@ -17,105 +17,7 @@ def get_current_specialist(member_id):
 
 @specialist_bp.route("/specialists", methods=["GET"])
 def all_specialist():
-    """
-    Получить список специалистов с пагинацией и фильтрацией.
 
-    ---
-    tags:
-      - Specialists
-    summary: Список специалистов
-    description: Возвращает список одобренных специалистов с возможностью фильтрации, сортировки и пагинации.
-    parameters:
-      - name: page
-        in: query
-        type: integer
-        default: 1
-        required: false
-        description: Номер страницы
-      - name: per_page
-        in: query
-        type: integer
-        default: 20
-        required: false
-        description: Количество на странице (макс. 100)
-      - name: specialization
-        in: query
-        type: string
-        required: false
-        description: Частичное совпадение по специализации
-      - name: min_price
-        in: query
-        type: integer
-        required: false
-        description: Минимальная цена (руб)
-      - name: max_price
-        in: query
-        type: integer
-        required: false
-        description: Максимальная цена (руб)
-      - name: min_rating
-        in: query
-        type: number
-        required: false
-        description: Минимальный средний рейтинг (0-5)
-      - name: min_experience
-        in: query
-        type: integer
-        required: false
-        description: Минимальный опыт (лет)
-      - name: sort_by
-        in: query
-        type: string
-        enum: [price, experience, name, rating]
-        default: id
-        required: false
-        description: Поле для сортировки
-      - name: sort_order
-        in: query
-        type: string
-        enum: [asc, desc]
-        default: asc
-        required: false
-        description: Направление сортировки
-    security: []
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: object
-          properties:
-            items:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  first_name:
-                    type: string
-                  last_name:
-                    type: string
-                  specialization:
-                    type: string
-                  base_price:
-                    type: integer
-                  experience_years:
-                    type: integer
-                  photo_url:
-                    type: string
-                  rating:
-                    type: number
-                  is_approved:
-                    type: boolean
-            total:
-              type: integer
-            page:
-              type: integer
-            per_page:
-              type: integer
-            pages:
-              type: integer
-    """
     # Параметры пагинации
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
@@ -240,66 +142,7 @@ def all_specialist():
 
 @specialist_bp.route("/profile/<int:specialist_id>", methods=["GET"])
 def specialist_profile(specialist_id):
-    """
-    Получить полный профиль специалиста.
-
-    ---
-    tags:
-      - Specialists
-    summary: Детальная информация о специалисте
-    description: Возвращает полные данные специалиста, включая отзывы и рейтинг. Доступно без авторизации.
-    parameters:
-      - name: specialist_id
-        in: path
-        type: integer
-        required: true
-        description: ID специалиста
-    security: []
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: object
-          properties:
-            id:
-              type: integer
-            first_name:
-              type: string
-            last_name:
-              type: string
-            specialization:
-              type: string
-            experience_years:
-              type: integer
-            base_price:
-              type: integer
-            bio:
-              type: string
-            photo_url:
-              type: string
-            education:
-              type: string
-            rating:
-              type: number
-            reviews_count:
-              type: integer
-            recent_reviews:
-              type: array
-              items:
-                type: object
-                properties:
-                  rating:
-                    type: integer
-                  comment:
-                    type: string
-                  created_at:
-                    type: string
-                    format: date-time
-                  client_name:
-                    type: string
-      404:
-        description: Специалист не найден
-    """
+    
     specialist = Specialist.query.filter_by(id=specialist_id, is_active=True, is_approved=True).first()
     if not specialist:
         return jsonify({"error": "Specialist not found"}), 404
@@ -336,59 +179,7 @@ def specialist_profile(specialist_id):
 @specialist_bp.route("/me", methods=["GET"])
 @jwt_required
 def profile():
-    """
-    Получить профиль текущего специалиста.
-
-    ---
-    tags:
-      - Specialists
-    summary: Мой профиль
-    description: Возвращает полную информацию о профиле авторизованного специалиста.
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: object
-          properties:
-            me:
-              type: object
-              properties:
-                id:
-                  type: integer
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                specialization:
-                  type: string
-                education:
-                  type: string
-                bio:
-                  type: string
-                experience_years:
-                  type: integer
-                base_price:
-                  type: integer
-                photo_url:
-                  type: string
-                verification_status:
-                  type: string
-                is_approved:
-                  type: boolean
-                created_at:
-                  type: string
-                  format: date-time
-                email:
-                  type: string
-            id:
-              type: integer
-      401:
-        description: Неавторизован
-      403:
-        description: Пользователь не специалист
-    """
+    
     member_id = g.member_id
     specialist, error_response, status = get_current_specialist(member_id)
     if error_response:
@@ -418,50 +209,6 @@ def profile():
 @specialist_bp.route("/update", methods=["PUT"])
 @jwt_required
 def update_profile():
-    """
-    Обновить данные профиля специалиста.
-
-    ---
-    tags:
-      - Specialists
-    summary: Редактирование профиля
-    description: Обновляет указанные поля профиля специалиста. При изменении профиля, если он был одобрен, статус сбрасывается на "pending".
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            specialization:
-              type: string
-            bio:
-              type: string
-            base_price:
-              type: integer
-            photo_url:
-              type: string
-            experience_years:
-              type: integer
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Профиль обновлён
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            id:
-              type: integer
-      400:
-        description: Неверные данные (отрицательная цена/опыт)
-      401:
-        description: Неавторизован
-      403:
-        description: Пользователь не специалист
-    """
     member_id = g.member_id
     specialist, error_response, status = get_current_specialist(member_id)
     if error_response:
@@ -494,44 +241,6 @@ def update_profile():
 @specialist_bp.route('/me/documents', methods=['GET'])
 @jwt_required
 def get_my_documents():
-    """
-    Получить список загруженных документов текущего специалиста.
-
-    ---
-    tags:
-      - Specialists
-    summary: Мои документы
-    description: Возвращает все документы, загруженные текущим специалистом (для верификации).
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              document_type:
-                type: string
-              title:
-                type: string
-              file_url:
-                type: string
-              verification_status:
-                type: string
-              is_active:
-                type: boolean
-              uploaded_at:
-                type: string
-                format: date-time
-      401:
-        description: Неавторизован
-      403:
-        description: Пользователь не специалист
-    """
     member_id = g.member_id
     specialist, error, status = get_current_specialist(member_id)
     if error:

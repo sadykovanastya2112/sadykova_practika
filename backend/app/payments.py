@@ -162,23 +162,6 @@ def create_payment():
 # ------------------------- Endpoint успешной оплаты (редирект) -------------------------
 @payments_bp.route("/payment-success")
 def payment_success():
-    """
-    Страница успешной оплаты (редирект).
-
-    ---
-    tags:
-      - Payments
-    summary: Подтверждение оплаты
-    description: Возвращает JSON-сообщение об успешном завершении тестового платежа. Используется как return_url после оплаты.
-    responses:
-      200:
-        description: Успешное подтверждение
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-    """
     return jsonify({"message": "Тестовый платёж прошёл успешно"})
 
 
@@ -186,47 +169,6 @@ def payment_success():
 @payments_bp.route("/check/<string:payment_id>", methods=["GET"])
 @jwt_required
 def check_payment(payment_id):
-    """
-    Опрос статуса платежа (polling).
-
-    ---
-    tags:
-      - Payments
-    summary: Проверить статус платежа
-    description: Запрашивает актуальный статус платежа в ЮKassa и синхронизирует его с локальной БД.
-    parameters:
-      - name: payment_id
-        in: path
-        type: string
-        required: true
-        description: Идентификатор платежа в ЮKassa (provider_payment_id)
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Актуальный статус платежа
-        schema:
-          type: object
-          properties:
-            payment_id:
-              type: string
-            status:
-              type: string
-            amount:
-              type: integer
-            currency:
-              type: string
-            paid_at:
-              type: string
-              format: date-time
-              nullable: true
-      403:
-        description: Доступ запрещён (платёж не принадлежит текущему клиенту)
-      404:
-        description: Платёж не найден локально или в ЮKassa
-      500:
-        description: Ошибка при запросе к ЮKassa
-    """
     # Находим локальный платёж
     payment = Payment.query.filter_by(provider_payment_id=payment_id).first()
     if not payment:

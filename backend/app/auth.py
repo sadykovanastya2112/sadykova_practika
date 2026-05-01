@@ -119,9 +119,7 @@ def callback():
 
     print("Callback: session state:", session.get("oauth_state"))
 
-    return redirect(
-        "http://127.0.0.1:5000/specialist/specialists?page=1&per_page=10&specialization=%D0%BF%D1%81%D0%B8%D1%85%D0%BE%D0%BB%D0%BE%D0%B3&min_price=1000"
-    )
+    return redirect(f"{current_app.config['BASE_URL']}/catalog")
 
 
 @auth_bp.route("/get-token")

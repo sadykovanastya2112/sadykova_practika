@@ -1,7 +1,7 @@
-import uuid
+import base64
 import hashlib
 import hmac
-import base64
+import uuid
 from datetime import datetime
 
 from flask import Blueprint, current_app, g, jsonify, request
@@ -15,6 +15,7 @@ from app.models import Appointment, AppointmentStatus, Client, Payment
 
 payments_bp = Blueprint("payments", __name__)
 
+
 # ------------------------- Настройка ЮKassa -------------------------
 def init_yookassa():
     Configuration.configure(
@@ -22,7 +23,10 @@ def init_yookassa():
         secret_key=current_app.config["YOOKASSA_SECRET_KEY"],
     )
 
-def verify_yookassa_webhook_signature(secret_key: str, request_body: bytes, signature_header: str) -> bool:
+
+def verify_yookassa_webhook_signature(
+    secret_key: str, request_body: bytes, signature_header: str
+) -> bool:
     """
     Проверяет подпись вебхука ЮKassa (HMAC-SHA256).
     secret_key – ваш секретный ключ из личного кабинета.
@@ -31,11 +35,12 @@ def verify_yookassa_webhook_signature(secret_key: str, request_body: bytes, sign
     """
     try:
         expected_signature = base64.b64encode(
-            hmac.new(secret_key.encode('utf-8'), request_body, hashlib.sha256).digest()
-        ).decode('utf-8')
+            hmac.new(secret_key.encode("utf-8"), request_body, hashlib.sha256).digest()
+        ).decode("utf-8")
         return hmac.compare_digest(expected_signature, signature_header)
     except Exception:
         return False
+
 
 # ------------------------- Endpoint создания платежа -------------------------
 @payments_bp.route("/create-payment", methods=["POST"])
@@ -128,7 +133,7 @@ def create_payment():
                 "amount": {"value": f"{price:.2f}", "currency": "RUB"},
                 "confirmation": {
                     "type": "redirect",
-                    "return_url": f"http://127.0.0.1:5000/payment-success?appointment_id={appointment_id}",
+                    "return_url": f"{current_app.config['API_URL']}/payment-success?appointment_id={appointment_id}",
                 },
                 "capture": True,
                 "description": f"Оплата сессии #{appointment_id}",
@@ -187,31 +192,35 @@ def check_payment(payment_id):
         yoo_payment = YooPayment.find_one(payment_id)
         if not yoo_payment:
             return jsonify({"error": "Payment not found in YooKassa"}), 404
-        new_status = yoo_payment.status  # 'pending', 'waiting_for_capture', 'succeeded', 'canceled'
+        new_status = (
+            yoo_payment.status
+        )  # 'pending', 'waiting_for_capture', 'succeeded', 'canceled'
     except Exception as e:
         return jsonify({"error": f"Failed to query YooKassa: {str(e)}"}), 500
 
     # Обновляем локальный статус, если изменился
     if payment.status != new_status:
         payment.status = new_status
-        if new_status == 'succeeded':
+        if new_status == "succeeded":
             payment.paid_at = datetime.utcnow()
             if appointment:
-                paid_status = AppointmentStatus.query.filter_by(code='paid').first()
+                paid_status = AppointmentStatus.query.filter_by(code="paid").first()
                 if paid_status:
                     appointment.status_id = paid_status.id
-        elif new_status == 'canceled':
+        elif new_status == "canceled":
             # Можно вернуть слот в доступное состояние? Не требуется.
             pass
         db.session.commit()
 
-    return jsonify({
-        "payment_id": payment.provider_payment_id,
-        "status": payment.status,
-        "amount": payment.amount,
-        "currency": payment.currency,
-        "paid_at": payment.paid_at.isoformat() if payment.paid_at else None
-    }), 200
+    return jsonify(
+        {
+            "payment_id": payment.provider_payment_id,
+            "status": payment.status,
+            "amount": payment.amount,
+            "currency": payment.currency,
+            "paid_at": payment.paid_at.isoformat() if payment.paid_at else None,
+        }
+    ), 200
 
 
 # ------------------------- Обработчик вебхуков ЮKassa -------------------------
@@ -249,7 +258,7 @@ def yookassa_webhook():
     """
     # Получаем тело запроса в сыром виде для проверки подписи
     raw_body = request.get_data()
-    signature_header = request.headers.get('X-Yookassa-Signature', '')
+    signature_header = request.headers.get("X-Yookassa-Signature", "")
 
     secret_key = current_app.config.get("YOOKASSA_SECRET_KEY")
     if not verify_yookassa_webhook_signature(secret_key, raw_body, signature_header):
@@ -273,7 +282,9 @@ def yookassa_webhook():
     elif event == "payment.canceled":
         provider_payment_id = obj.get("id")
         if provider_payment_id:
-            payment = Payment.query.filter_by(provider_payment_id=provider_payment_id).first()
+            payment = Payment.query.filter_by(
+                provider_payment_id=provider_payment_id
+            ).first()
             if payment and payment.status != "canceled":
                 payment.status = "canceled"
                 db.session.commit()

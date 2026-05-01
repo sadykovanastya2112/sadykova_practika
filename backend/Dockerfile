@@ -10,4 +10,7 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "run.py"]
+RUN echo "#!/bin/sh\nflask db upgrade\npython run.py" > /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]

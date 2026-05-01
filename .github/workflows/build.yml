@@ -43,6 +43,8 @@ jobs:
           context: ./frontend
           push: ${{ github.ref_name == 'main' }}
           tags: ghcr.io/${{ env.REPO_LC }}/frontend:latest
+          build-args: |
+            VITE_API_URL=${{ secrets.API_URL }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -88,6 +90,16 @@ jobs:
             export LOGTO_CLIENT_SECRET='${{ secrets.LOGTO_CLIENT_SECRET }}' && \
             export LOGTO_ISSUER='${{ secrets.LOGTO_ISSUER }}' && \
             export LOGTO_REDIRECT_URI='${{ secrets.LOGTO_REDIRECT_URI }}' && \
+            export CALCOM_WEBHOOK_SECRET='${{ secrets.CALCOM_WEBHOOK_SECRET }}' && \
+            export CALCOM_API_URL='${{ secrets.CALCOM_API_URL }}' && \
+            export CALCOM_EVENT_TYPE_SLUG='${{ secrets.CALCOM_EVENT_TYPE_SLUG }}' && \
+            export CALCOM_API_KEY='${{ secrets.CALCOM_API_KEY }}' && \
+            export YOOKASSA_SECRET_KEY='${{ secrets.YOOKASSA_SECRET_KEY }}' && \
+            export YOOKASSA_SHOP_ID='${{ secrets.YOOKASSA_SHOP_ID }}' && \
+            export SECRET_KEY='${{ secrets.SECRET_KEY }}' && \
+            export SESSION_SECRET='${{ secrets.SESSION_SECRET }}' && \
+            export BASE_URL='${{ secrets.BASE_URL }}' && \
+            export API_URL='${{ secrets.API_URL }}' && \
             
             docker compose pull && \
             docker compose up -d --remove-orphans

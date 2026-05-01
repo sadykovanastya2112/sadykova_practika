@@ -20,43 +20,7 @@ def get_current_client(member_id):
 @clients_bp.route("/get-slots", methods=["GET"])
 @jwt_required
 def check_specialist_slots():
-    """
-    Получение свободных слотов выбранного специалиста.
-
-    ---
-    tags:
-      - Clients
-    summary: Получить свободные слоты специалиста
-    description: Возвращает список свободных слотов (без бронирований) для указанного специалиста, дата начала которых позже текущего момента.
-    parameters:
-      - name: specialist_id
-        in: query
-        type: integer
-        required: true
-        description: ID специалиста
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Успешный ответ
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              start_at:
-                type: string
-                format: date-time
-              end_at:
-                type: string
-                format: date-time
-      404:
-        description: Специалист не найден
-      401:
-        description: Неавторизован
-    """
+    
     # получаем айди специалиста
     specialist_id = request.args.get("specialist_id")
 

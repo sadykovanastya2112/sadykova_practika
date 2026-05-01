@@ -171,8 +171,8 @@ def sitch_role():
         db.session.commit()
 
 
-    role_codes = [r.code for r in member.roles]
-    if switch_role not in role_codes:
+    roles = [r.role.code for r in member.roles]
+    if switch_role not in roles:
         return jsonify({"error": "Role is not asigned to member"}),400
     
     session['active_role'] = switch_role

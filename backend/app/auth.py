@@ -10,7 +10,6 @@ from app.extension import db
 from app.jwt_auth import jwt_required
 from app.logto import oauth
 from app.models import Client, Member, MemberRole, Role, Specialist
-from app.client import get_current_client
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -110,16 +109,15 @@ def callback():
 
     roles = [r.code for r in member.roles]
     if not roles:
-        return jsonify({"error": "WTF n0 roles"}),500
+        return jsonify({"error": "WTF n0 roles"}), 500
     if len(roles) == 1:
-        session['active_role'] = roles[0]
+        session["active_role"] = roles[0]
     else:
         last_role = member.last_active_role
         if last_role and last_role in roles:
-            session['active_role'] = last_role
+            session["active_role"] = last_role
         else:
-            session['active_role'] = 'client'
-
+            session["active_role"] = "client"
 
     print("Access token:", token.get("access_token"))
     # 5. Сохраняем member.id в сессию для быстрого доступа
@@ -136,7 +134,6 @@ def callback():
     return redirect(f"{current_app.config['BASE_URL']}/catalog")
 
 
-
 @auth_bp.route("/switch-role")
 @jwt_required
 def sitch_role():
@@ -148,38 +145,41 @@ def sitch_role():
     """
 
     data = request.get_json()
-    switch_role = data.get('role')
+    switch_role = data.get("role")
     if not switch_role:
-        return jsonify({"error": "Missing role in json data"}),400
-    
+        return jsonify({"error": "Missing role in json data"}), 400
+
     member_id = g.member_id
     member = Member.query.get(member_id)
 
-    if switch_role == 'specialist':
+    if switch_role == "specialist":
         existing_specialist = Specialist.query.filter_by(member_id=member.id).first()
     if not existing_specialist:
         specialist = Specialist(
             member_id=member.id,
-            first_name=member.email.split('@')[0] if member.email else '',
-            last_name='',
-            specialization='',
+            first_name=member.email.split("@")[0] if member.email else "",
+            last_name="",
+            specialization="",
             base_price=0,
             is_approved=False,
-            verification_status='pending'
+            verification_status="pending",
         )
         db.session.add(specialist)
         db.session.commit()
 
-
     roles = [r.role.code for r in member.roles]
     if switch_role not in roles:
-        return jsonify({"error": "Role is not asigned to member"}),400
-    
-    session['active_role'] = switch_role
+        return jsonify({"error": "Role is not asigned to member"}), 400
+
+    session["active_role"] = switch_role
     db.session.commit()
 
-    return jsonify({"message": f"Acttive role switched to {switch_role}", "active_role": switch_role}),200
-
+    return jsonify(
+        {
+            "message": f"Acttive role switched to {switch_role}",
+            "active_role": switch_role,
+        }
+    ), 200
 
 
 @auth_bp.route("/get-token")
@@ -213,7 +213,7 @@ def whoami():
     try:
         member_id = g.member_id
     except OAuthError as e:
-        return jsonify({"error": f"{e}"}),500
+        return jsonify({"error": f"{e}"}), 500
     return jsonify({"member_id": member_id})
 
 
@@ -307,14 +307,16 @@ def get_me():
     else:
         role_code = active_role[0]
 
-
-    roles = [r.code for r in member.roles]
-    active_role = session.get('active_role')
-    return jsonify({"id": member.id,
-                    "email": member.email,
-                    "all_roles": roles,
-                    "active_role": active_role
-                    }), 200
+    roles = [r.role.code for r in member.roles]
+    active_role = session.get("active_role")
+    return jsonify(
+        {
+            "id": member.id,
+            "email": member.email,
+            "all_roles": roles,
+            "active_role": active_role,
+        }
+    ), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])

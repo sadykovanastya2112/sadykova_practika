@@ -22,52 +22,6 @@ def get_current_specialist(member_id):
 def get_specialist_slots():
     """
     Получение списка слотов текущего специалиста.
-
-    ---
-    tags:
-      - Slots
-    summary: Получить слоты специалиста
-    description: Возвращает все слоты текущего авторизованного специалиста с возможностью фильтрации по дате.
-    parameters:
-      - name: start_date
-        in: query
-        type: string
-        format: date
-        required: false
-        description: Начальная дата для фильтрации (ISO, например, 2025-05-01)
-      - name: end_date
-        in: query
-        type: string
-        format: date
-        required: false
-        description: Конечная дата для фильтрации
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Список слотов
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              start_at:
-                type: string
-                format: date-time
-              end_at:
-                type: string
-                format: date-time
-              external_id:
-                type: string
-                nullable: true
-              provider:
-                type: string
-              price:
-                type: integer
-      403:
-        description: Пользователь не является специалистом
     """
     # получаем слоты специлиста
     member_id = g.member_id
@@ -107,86 +61,6 @@ def get_specialist_slots():
 def create_slot():
     """
     Создание одного или нескольких слотов.
-
-    ---
-    tags:
-      - Slots
-    summary: Создать слот(ы)
-    description: |
-      Создаёт один или несколько слотов для текущего специалиста.
-      Если цена не указана, используется base_price специалиста.
-      Можно передать как объект, так и массив объектов.
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          oneOf:
-            - type: object
-              required:
-                - start_at
-                - end_at
-              properties:
-                start_at:
-                  type: string
-                  format: date-time
-                end_at:
-                  type: string
-                  format: date-time
-                price:
-                  type: integer
-            - type: array
-              items:
-                type: object
-                required:
-                  - start_at
-                  - end_at
-                properties:
-                  start_at:
-                    type: string
-                    format: date-time
-                  end_at:
-                    type: string
-                    format: date-time
-                  price:
-                    type: integer
-    security:
-      - BearerAuth: []
-    responses:
-      201:
-        description: Слот(ы) успешно создан(ы)
-        schema:
-          oneOf:
-            - type: object
-              properties:
-                id:
-                  type: integer
-                start_at:
-                  type: string
-                  format: date-time
-                end_at:
-                  type: string
-                  format: date-time
-                price:
-                  type: integer
-            - type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  start_at:
-                    type: string
-                    format: date-time
-                  end_at:
-                    type: string
-                    format: date-time
-                  price:
-                    type: integer
-      400:
-        description: Неверный формат данных (даты, цена, start_at >= end_at и т.д.)
-      403:
-        description: Пользователь не является специалистом
     """
     # получаем слоты специалиста
     member_id = g.member_id

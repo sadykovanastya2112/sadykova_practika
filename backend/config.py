@@ -12,7 +12,7 @@ class Config:
     LOGTO_ISSUER = os.getenv("LOGTO_ISSUER")
     LOGTO_REDIRECT_URI = os.getenv("LOGTO_REDIRECT_URI")
     BASE_URL = os.getenv("BASE_URL")
-    API_URL = os.getenv("API_URL")
+    API_URL = os.getenv("API_URL", )
     SESSION_TYPE = "filesystem"
     SESSION_FILE_DIR = os.path.join(
         os.path.abspath(os.path.dirname(__file__)), "flask_session"

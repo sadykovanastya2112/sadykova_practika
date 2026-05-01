@@ -48,49 +48,6 @@ def verify_yookassa_webhook_signature(
 def create_payment():
     """
     Создание платежа в ЮKassa для указанного бронирования.
-
-    ---
-    tags:
-      - Payments
-    summary: Создать платёж
-    description: Генерирует ссылку на оплату через ЮKassa для бронирования со статусом "pending_payment".
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          required:
-            - appointment_id
-          properties:
-            appointment_id:
-              type: integer
-              description: ID бронирования (Appointment)
-    security:
-      - BearerAuth: []
-    responses:
-      200:
-        description: Платёж создан
-        schema:
-          type: object
-          properties:
-            confirmation_url:
-              type: string
-              description: Ссылка для перенаправления на оплату
-            payment_id:
-              type: string
-            appointment_id:
-              type: integer
-      400:
-        description: Не передан appointment_id
-      403:
-        description: Клиент не найден или бронь не принадлежит клиенту
-      404:
-        description: Бронирование не найдено
-      409:
-        description: Бронирование уже не в статусе ожидания оплаты
-      500:
-        description: Ошибка при инициализации ЮKassa или создании платежа
     """
     data = request.get_json()
     if not data or "appointment_id" not in data:
@@ -154,6 +111,8 @@ def create_payment():
     )
     db.session.add(payment)
     db.session.commit()
+
+    print(f"бля короче вот пайсмент {yoo_payment.id}")
 
     return jsonify(
         {

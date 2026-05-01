@@ -15,8 +15,9 @@ class Member(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     email = db.Column(
-        db.String(64), nullable=True
+        db.String(64), nullable=False
     )  #!!! не забыть переключить на False !!!
+    last_active_role = db.Column(db.String(20), nullable=True)
 
     roles = db.relationship("MemberRole", back_populates="member")
     specialist = db.relationship("Specialist", uselist=False, back_populates="member")

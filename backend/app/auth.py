@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime
 
 from authlib.integrations.flask_client import OAuthError
-from flask import Blueprint, current_app, jsonify, redirect, request, session, g
+from flask import Blueprint, current_app, g, jsonify, redirect, request, session
 from flask_jwt_extended import create_access_token
 
 from app.extension import db
@@ -16,7 +16,6 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/login")
 def login():
-
     """
     Инициирует аутентификацию через Logto.
     ---
@@ -160,7 +159,7 @@ def whoami():
 
 
 
-@auth_bp.route("/change-role",methods=['POST'])
+@auth_bp.route("/change-role", methods=["POST"])
 @jwt_required
 def change_role():
 
@@ -179,7 +178,6 @@ def change_role():
 
     member = Member.query.get(member_id)
     email = member.email
-    
 
     new_role = MemberRole(
         member_id=member_id,
@@ -197,12 +195,12 @@ def change_role():
         if not Specialist.query.filter_by(member_id=member_id).first():
             specialist = Specialist(
                 member_id=member.id,
-                first_name= email.split("@")[0],
-                last_name='',
-                specialization='',
+                first_name=email.split("@")[0],
+                last_name="",
+                specialization="",
                 base_price=1500,
                 is_approved=False,
-                verification_status='pending'
+                verification_status="pending",
             )
             db.session.add(specialist)
 
@@ -212,10 +210,7 @@ def change_role():
     ), 200
 
 
-
-
-
-@auth_bp.route('/logout',methods=['POST'])
+@auth_bp.route("/logout", methods=["POST"])
 def logout():
     """
     Выход из системы.
@@ -231,24 +226,20 @@ def logout():
         description: Редирект на Logto logout.
     """
     session.clear()
-    if request.args.get('test') == '1':
+    if request.args.get("test") == "1":
         return jsonify({"message": "Logged out"}), 200
-    logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri=http://127.0.0.1:5000"
+    logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri=https://safe-contact.duckdns.org"
     return redirect(logout_url)
 
 
-
-
-
-
-@auth_bp.route('/test-token', methods=['POST'])
+@auth_bp.route("/test-token", methods=["POST"])
 def test_token():
     """
     ТЕСТОВЫЙ эндпоинт: возвращает JWT для заданного email.
     Использовать только для Postman-тестов!
     """
     data = request.get_json()
-    email = data.get('email')
+    email = data.get("email")
     # В реальности вы должны проверить пароль, но для тестов можно упростить
     member = Member.query.filter_by(email=email).first()
     if not member:
@@ -257,14 +248,14 @@ def test_token():
         db.session.add(member)
         db.session.commit()
         # Назначаем роль client
-        client_role = Role.query.filter_by(code='client').first()
+        client_role = Role.query.filter_by(code="client").first()
         if client_role:
             mr = MemberRole(member_id=member.id, role_id=client_role.id, is_active=True)
             db.session.add(mr)
+            if not Client.query.filter_by(member_id=member.id).first():
+                client = Client(member_id=member.id, display_name=f"User{member.id}")
+                db.session.add(client)
             db.session.commit()
     # Генерируем JWT (используйте ваш метод генерации)
     access_token = create_access_token(identity=member.auth_id)
-    return jsonify({
-    'access_token': access_token,
-    'id': member.id
-}), 200
+    return jsonify({"access_token": access_token, "id": member.id}), 200

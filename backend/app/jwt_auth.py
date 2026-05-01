@@ -13,10 +13,10 @@ requests_cache.install_cache("jwks_cache", expire_after=86400)
 def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        DEBUG_BYPASS_JWT = True
+        DEBUG_BYPASS_JWT = False
         if DEBUG_BYPASS_JWT:
-            g.member_id = 3
-            session['member_id'] = 3   # также сохраняем в сессию для единообразия с require_role
+            g.member_id = 6
+            session['member_id'] = 6  # также сохраняем в сессию для единообразия с require_role
             return f(*args, **kwargs)
 
         auth_header = request.headers.get("Authorization", "")
@@ -25,13 +25,13 @@ def jwt_required(f):
         token = auth_header[7:]
 
         try:
-            jwks_url = f"{current_app.config['LOGTO_ISSUER']}/oauth2/jwks"
+            jwks_url = f"{current_app.config['LOGTO_ISSUER']}/jwks"
             jwks_client = PyJWKClient(jwks_url)
             signing_key = jwks_client.get_signing_key_from_jwt(token)
             payload = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=["RS256"],
+                algorithms=["RS256", "ES384"],
                 audience=current_app.config["LOGTO_CLIENT_ID"],
                 options={"verify_exp": True},
             )
@@ -59,13 +59,11 @@ def jwt_required(f):
 
 
 def require_role(role_name):
-    """
-    Декоратор для проверки роли пользователя.
-    Использует g.member_id (предпочтительно) или session['member_id'].
-    """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            print(">>> Request to protected endpoint")
+            print("Authorization header:", request.headers.get("Authorization"))
             # Получаем member_id из g (если установлен) или из сессии
             member_id = getattr(g, 'member_id', None)
             if not member_id:

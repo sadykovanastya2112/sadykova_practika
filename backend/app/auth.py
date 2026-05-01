@@ -36,37 +36,17 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
+    print("Login: session before set:", dict(session))
+    session['oauth_state'] = state
+    print("Login: session after set:", dict(session))
+
     return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
+
 
 
 @auth_bp.route("/callback")
 def callback():
-    """
-    Обрабатывает callback от Logto после аутентификации.
-    ---
-    tags:
-      - Auth
-    summary: Callback после входа
-    description: Обменивает код на токен, создаёт/обновляет пользователя в БД, устанавливает сессию.
-    parameters:
-      - name: code
-        in: query
-        type: string
-        required: true
-        description: Код авторизации от Logto.
-      - name: state
-        in: query
-        type: string
-        required: true
-        description: Параметр state для защиты от CSRF.
-    responses:
-      302:
-        description: Редирект на дашборд.
-      400:
-        description: Ошибка валидации state или параметров.
-      500:
-        description: Внутренняя ошибка сервера.
-    """
+    """Обрабатывает возврат от Logto, сохраняет JWT в сессию и перенаправляет на фронтенд."""
 
     if request.args.get("state") != session.get("oauth_state"):
         return jsonify({"error": "invalid state parametrs"}), 400
@@ -77,6 +57,16 @@ def callback():
     except OAuthError as e:
         return jsonify({"error": f"authorizstion failed: {e.error}"}), 400
 
+  
+    id_token = token.get('id_token')   # JWT
+    if id_token:
+        session['id_token'] = id_token
+        print("\n" + "="*70)
+        print("  JWT токен:")
+        print(id_token)
+        print("="*70 + "\n")
+    else:
+        print("id_token не найден")
     # извлечение информации user'а из ID-токена (JWT)
     user_info = oauth.logto.parse_id_token(token, nonce=session.get("oauth_nonce"))
     auth_id = user_info["sub"]  # айди пользователя
@@ -120,51 +110,60 @@ def callback():
     else:
         db.session.commit()
 
+    print("Access token:", token.get('access_token'))
     # 5. Сохраняем member.id в сессию для быстрого доступа
     session["member_id"] = member.id
 
-    return redirect("http://127.0.0.1:5000/dashboard")
+
+    id_token = token.get('id_token')
+    if id_token:
+        session['jwt_token'] = id_token
+    else:
+        return jsonify({"warning": "id_token not found in Logto response"}),100
+
+    print("Callback: session state:", session.get('oauth_state'))
+
+    return redirect("http://127.0.0.1:5000/specialist/specialists?page=1&per_page=10&specialization=%D0%BF%D1%81%D0%B8%D1%85%D0%BE%D0%BB%D0%BE%D0%B3&min_price=1000")
+
+
+@auth_bp.route('/get-token')
+def get_token():
+    """
+    Возвращает JWT-токен текущего аутентифицированного пользователя.
+    Требует наличия активной сессии (пользователь должен войти через /auth/login).
+    Дополнительно защищено проверкой Referer (опционально).
+    """
+    referer = request.headers.get('Referer')
+
+    allowed_referers = ['http://localhost:5000', 'https://npm.safe-contact.duckdns.org']
+    if referer and not any(referer.startswith(host) for host in allowed_referers):
+        return jsonify({'error': 'Invalid request source'}), 403
+    
+    member_id = session.get('member_id')
+    if not member_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    jwt_token = session.get('jwt_token')
+    if not jwt_token:
+        return jsonify({'error': 'Token not found'}), 404
+    
+    return jsonify({'access_token': jwt_token}), 200
+
+
+
+
+@auth_bp.route('/whoami')
+@jwt_required
+def whoami():
+    from flask import g
+    return jsonify({"member_id": getattr(g, 'member_id', None)})
+
 
 
 @auth_bp.route("/change-role",methods=['POST'])
 @jwt_required
 def change_role():
-    """
-    Изменяет активную роль пользователя.
-    ---
-    tags:
-      - Auth
-    summary: Сменить роль
-    description: Позволяет авторизованному пользователю сменить роль (client, specialist и т.д.). При смене на specialist создаётся профиль специалиста.
-    security:
-      - BearerAuth: []
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          properties:
-            role:
-              type: string
-              enum: ["client", "specialist", "moderator", "admin", "owner"]
-    responses:
-      200:
-        description: Роль успешно изменена.
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            id:
-              type: string
-      400:
-        description: Неверная роль.
-      401:
-        description: Неавторизован.
-      500:
-        description: Роль не найдена в БД.
-    """
+
     data = request.get_json()
     role_code = data.get("role")
 

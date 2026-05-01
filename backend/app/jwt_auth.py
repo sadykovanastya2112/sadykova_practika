@@ -66,23 +66,20 @@ def require_role(role_name):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print(">>> Request to protected endpoint")
-            print("Authorization header:", request.headers.get("Authorization"))
-            # Получаем member_id из g (если установлен) или из сессии
-            member_id = getattr(g, "member_id", None)
-            if not member_id:
-                member_id = session.get("member_id")
+            member_id = getattr(g, "member_id", None) or session.get("member_id")
             if not member_id:
                 return jsonify({"error": "Unauthorized"}), 401
 
-            member = Member.query.get(member_id)
-            if not member:
-                return jsonify({"error": "User not found"}), 401
+            active_role = session.get("active_role")
+            if not active_role:
+                return jsonify({"error": "No active role selected"}), 403
 
-            # Проверяем наличие требуемой роли (роли хранятся в member.roles)
-            roles_codes = [r.code for r in member.roles]
-            if role_name not in roles_codes:
-                return jsonify({"error": "Forbidden"}), 403
+            if active_role != role_name:
+                return jsonify(
+                    {
+                        "error": f"Forbidden: need {role_name} role, but active is {active_role}"
+                    }
+                ), 403
 
             return f(*args, **kwargs)
 

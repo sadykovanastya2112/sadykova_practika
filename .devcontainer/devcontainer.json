@@ -19,7 +19,14 @@
     "FLASK_APP": "backend/run.py",
     "FLASK_DEBUG": "1",
     "NODE_ENV": "development",
-    "VITE_API_URL": "http://localhost:5000"
+    "VITE_API_URL": "http://localhost:5000",
+    "VITE_LOGTO_ENDPOINT": "https://x82zy3.logto.app/",
+    "VITE_LOGTO_APP_ID": "r9ydrdffszeg2xlezal04",
+    "LOGTO_CLIENT_ID": "r9ydrdffszeg2xlezal04",
+    "LOGTO_CLIENT_SECRET": "4yxmbi2xtlGLBnBC9y3AUWPO7ro5LS43",
+    "LOGTO_ISSUER": "https://x82zy3.logto.app/oidc",
+    "LOGTO_REDIRECT_URI": "http://localhost:5000/auth/callback",
+    "BASE_URL": "http://localhost:5173"
   },
   "postCreateCommand": "chmod +x ./.devcontainer/welcome.sh && npm install --prefix frontend && pip install -r backend/requirements.txt && echo './.devcontainer/welcome.sh' >> ~/.bashrc",
 

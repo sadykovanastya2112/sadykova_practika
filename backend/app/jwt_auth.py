@@ -13,16 +13,19 @@ requests_cache.install_cache("jwks_cache", expire_after=86400)
 def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        DEBUG_BYPASS_JWT = True
+        DEBUG_BYPASS_JWT = False
         if DEBUG_BYPASS_JWT:
             g.member_id = 3
-            session['member_id'] = 3   # также сохраняем в сессию для единообразия с require_role
+            session["member_id"] = (
+                3  # также сохраняем в сессию для единообразия с require_role
+            )
             return f(*args, **kwargs)
 
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
             return jsonify({"error": "Missing or invalid Authorization header"}), 401
         token = auth_header[7:]
+        print(f"DEBUG: Processing token: {token[:10]}...")
 
         try:
             jwks_url = f"{current_app.config['LOGTO_ISSUER']}/oauth2/jwks"
@@ -44,13 +47,14 @@ def jwt_required(f):
             if not member:
                 return jsonify({"error": "User not found"}), 401
             g.member_id = member.id
-            session['member_id'] = member.id   # синхронизируем с сессией
+            session["member_id"] = member.id  # синхронизируем с сессией
 
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Token expired"}), 401
         except jwt.InvalidTokenError as e:
             return jsonify({"error": f"Invalid token: {str(e)}"}), 401
         except Exception as e:
+            print(f"DEBUG: Auth failed with error: {str(e)}")
             return jsonify({"error": f"Authentication error\n{str(e)}"}), 401
 
         return f(*args, **kwargs)
@@ -63,13 +67,14 @@ def require_role(role_name):
     Декоратор для проверки роли пользователя.
     Использует g.member_id (предпочтительно) или session['member_id'].
     """
+
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # Получаем member_id из g (если установлен) или из сессии
-            member_id = getattr(g, 'member_id', None)
+            member_id = getattr(g, "member_id", None)
             if not member_id:
-                member_id = session.get('member_id')
+                member_id = session.get("member_id")
             if not member_id:
                 return jsonify({"error": "Unauthorized"}), 401
 
@@ -83,5 +88,7 @@ def require_role(role_name):
                 return jsonify({"error": "Forbidden"}), 403
 
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator

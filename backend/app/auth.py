@@ -35,7 +35,12 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
-    return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
+    return oauth.logto.authorize_redirect(
+        redirect_uri,
+        state=state,
+        nonce=nonce,
+        resource="https://api.safe-contact.duckdns.org/logto-api",
+    )
 
 
 @auth_bp.route("/callback")
@@ -66,7 +71,6 @@ def callback():
       500:
         description: Внутренняя ошибка сервера.
     """
-
     if request.args.get("state") != session.get("oauth_state"):
         return jsonify({"error": "invalid state parametrs"}), 400
 
@@ -122,7 +126,7 @@ def callback():
     # 5. Сохраняем member.id в сессию для быстрого доступа
     session["member_id"] = member.id
 
-    return redirect("https://safe-contact.duckdns.org")
+    return redirect(f"{current_app.config['BASE_URL']}/dashboard?token={token}")
 
 
 @auth_bp.route("/change-role", methods=["POST"])
@@ -211,6 +215,48 @@ def change_role():
     ), 200
 
 
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required
+def get_me():
+    member_id = g.member_id
+    member = Member.query.get(member_id)
+
+    if not member:
+        return jsonify({"error": "Member not found"}), 404
+
+    # Ищем активную роль
+    active_role = (
+        db.session.query(Role.code)
+        .join(MemberRole)
+        .filter(MemberRole.member_id == member_id, MemberRole.is_active)
+        .first()
+    )
+
+    # Если роли почему-то нет (аварийный случай)
+    if not active_role:
+        client_role = Role.query.filter_by(code="client").first()
+        # Назначаем роль 'client' по умолчанию
+        new_mr = MemberRole(
+            member_id=member_id,
+            role_id=client_role.id,
+            is_active=True,
+            assigned_at=datetime.utcnow(),
+        )
+        db.session.add(new_mr)
+
+        # Проверяем наличие профиля клиента
+        if not Client.query.filter_by(member_id=member_id).first():
+            new_client = Client(member_id=member_id, display_name=f"User{member_id}")
+            db.session.add(new_client)
+
+        db.session.commit()
+        role_code = "client"
+    else:
+        role_code = active_role[0]
+
+    return jsonify({"id": member.id, "email": member.email, "role": role_code}), 200
+
+
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     """
@@ -229,7 +275,7 @@ def logout():
     session.clear()
     if request.args.get("test") == "1":
         return jsonify({"message": "Logged out"}), 200
-    logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri=https://safe-contact.duckdns.org"
+    logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri={current_app.config['BASE_URL']}"
     return redirect(logout_url)
 
 

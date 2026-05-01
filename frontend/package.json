@@ -13,7 +13,9 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@logto/vue": "^3.0.13",
     "@primevue/themes": "^4.5.4",
+    "axios": "^1.15.2",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",
     "vue": "^3.5.29",

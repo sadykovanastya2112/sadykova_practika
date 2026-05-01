@@ -14,5 +14,6 @@ def init_logto(app):
         client_kwargs={
             "scope": "openid email profile",
             "client_auth_method": "client_secret_basic",
+            "resource": "https://api.safe-contact.duckdns.org/logto-api",
         },
     )

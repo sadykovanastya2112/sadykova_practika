@@ -79,7 +79,7 @@ class Specialist(db.Model):
     first_name = db.Column(db.String(32))
     last_name = db.Column(db.String(32))
     specialization = db.Column(db.String(64))
-    education = db.Column(db.String(64))
+    education = db.Column(db.String(255))
     bio = db.Column(db.Text)
     experience_years = db.Column(db.Integer)
     base_price = db.Column(db.Integer, nullable=True, server_default="1500")

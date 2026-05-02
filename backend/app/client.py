@@ -4,7 +4,7 @@ from flask import Blueprint, g, jsonify, request
 
 from app.extension import db
 from app.jwt_auth import jwt_required
-from app.models import Appointment, AppointmentStatus, Client, Slot
+from app.models import Appointment, AppointmentStatus, Client, Member, Slot
 
 clients_bp = Blueprint("clients", __name__)
 
@@ -20,7 +20,7 @@ def get_current_client(member_id):
 @clients_bp.route("/get-slots", methods=["GET"])
 @jwt_required
 def check_specialist_slots():
-    
+
     # получаем айди специалиста
     specialist_id = request.args.get("specialist_id")
 
@@ -39,7 +39,7 @@ def check_specialist_slots():
     )
 
     if not slots:
-        return jsonify({"message":"specialist dont have slots"}),200
+        return jsonify({"message": "specialist dont have slots"}), 200
 
     # отдаём данные
     return jsonify(
@@ -52,7 +52,6 @@ def check_specialist_slots():
             for s in slots
         ]
     )
-     
 
 
 @clients_bp.route("/make-appointment", methods=["POST"])
@@ -60,52 +59,6 @@ def check_specialist_slots():
 def create_appointment():
     """
     Создание бронирования на выбранный слот.
-
-    ---
-    tags:
-      - Clients
-    summary: Забронировать слот
-    description: Создаёт бронирование (appointment) для текущего клиента на указанный слот. Слот должен быть свободен, цена фиксируется.
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          required:
-            - slot_id
-            - specialist_id
-          properties:
-            slot_id:
-              type: integer
-              description: ID слота
-            specialist_id:
-              type: integer
-              description: ID специалиста
-    security:
-      - BearerAuth: []
-    responses:
-      201:
-        description: Бронирование успешно создано
-        schema:
-          type: object
-          properties:
-            appointment_id:
-              type: integer
-            slot_id:
-              type: integer
-            client_id:
-              type: integer
-            status_id:
-              type: integer
-            price:
-              type: integer
-      400:
-        description: Неверные данные (слот уже занят, отсутствуют поля и т.д.)
-      403:
-        description: Пользователь не является клиентом
-      401:
-        description: Неавторизован
     """
     # Тело запроса, например: {"slot_id": 123, "specialist_id": 1}
     data_slot = request.get_json()
@@ -136,8 +89,6 @@ def create_appointment():
     # if client.member_id == slot.specialist.member_id:
     #     return jsonify({"error":"психолог не может сам у себя забронировать слот"}),400
 
-    # я пока неуверен может ли пользователь одновременно сделать несколько бронирований, но пока что сделаю только по одному
-
 
     price_appoinment = slot.price
     status = AppointmentStatus.query.filter_by(code="pending_payment").first()
@@ -147,7 +98,7 @@ def create_appointment():
         client_id=client.id,
         status_id=status.id,
         created_at=datetime.now(),
-        price = price_appoinment
+        price=price_appoinment,
     )
 
     db.session.add(appointment)
@@ -159,6 +110,57 @@ def create_appointment():
             "slot_id": slot.id,
             "client_id": client.id,
             "status_id": status.id,  # позже исправить
-            "price": price_appoinment
+            "price": price_appoinment,
         }
     ), 201
+
+
+@clients_bp.route("/me", methods=["GET"])
+@jwt_required
+def client_profile():
+
+    member_id = g.member_id
+    client, error_response, status = get_current_client(member_id)
+    if error_response:
+        return error_response, status
+
+    member = Member.query.get(member_id)
+
+    profile_data = {
+        "id": client.id,
+        "member_id": member_id,
+        "display_name": member.display_name,
+        "bio": client.bio,
+        "avatar_url": client.avatar_url,
+        "created_at": client.created_at.isoformat() if client.created_at else None,
+        "email": member.email if member else None,
+    }
+
+    return jsonify({"me": profile_data, "clietn_id": client.id, "member_id": member_id})
+
+
+@clients_bp.route("/me", methods=["PUT"])
+@jwt_required
+def client_profile_update():
+
+    member_id = g.member_id
+    client, error_response, status = get_current_client(member_id)
+    if error_response:
+        return error_response, status
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "no json data"}), 400
+
+    allowed_fields = [
+        "display_name",
+        "bio",
+        "avatar_url",
+    ]
+
+    for item in allowed_fields:
+        if item in data:
+            setattr(client, item, data[item])
+
+    db.session.commit()
+    return jsonify({"message": "profile info updated", "id": member_id}), 200

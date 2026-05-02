@@ -2,6 +2,7 @@
 import TieredMenu from 'primevue/tieredmenu'
 import { ref, computed } from 'vue'
 import { authState, logout } from '@/services/auth.js'
+import { apiAssignRole } from '@/services/api.js'
 
 const props = defineProps({
   user: {
@@ -23,9 +24,8 @@ const items = computed(() => [
     icon: 'pi pi-user-plus',
     // Показываем, если текущая роль - клиент И в списке ролей нет специалиста
     visible: authState.role === 'client' && !props.user.roles.includes('specialist'),
-    command: () => {
-      console.log('Вызов функции регистрации специалиста')
-      // Здесь будет твой вызов: await apiCreateSpecialistProfile()
+    command: async () => {
+      await apiAssignRole('specialist')
     },
   },
   {

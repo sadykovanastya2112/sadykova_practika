@@ -98,7 +98,7 @@ watch(
                 {{ userData.name }}
               </p>
 
-              <AppAvatar :image="userData.photo" class="size-12" />
+              <AppAvatar :image="userData.photo" class="size-8" />
             </div>
           </Button>
           <UserPopupMenu ref="menuComponent" :user="userData" />

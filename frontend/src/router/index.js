@@ -15,7 +15,7 @@ const router = createRouter({
     {
       path: '/403',
       name: 'AccesDenied',
-      component: () => import('@/views/AccesDeniedView.vue'),
+      component: () => import('@/views/AccessDeniedView.vue'),
     },
   ],
 })

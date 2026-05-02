@@ -52,6 +52,17 @@ export const apiGetUserRoles = async () => {
   return response.data.all_roles
 }
 
+export const apiAssignRole = async (roleName) => {
+  try {
+    const response = await api.post('/auth/assign-role', {
+      role: roleName,
+    })
+    return response.data
+  } catch (error) {
+    throw error
+  }
+}
+
 export const apiGetUserIdentity = async () => {
   const currentRole = authState.role
   try {

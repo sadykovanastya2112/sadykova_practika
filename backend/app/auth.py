@@ -123,52 +123,42 @@ def callback():
     return redirect(f"{current_app.config['BASE_URL']}/catalog")
 
 
-@auth_bp.route("/switch-role")
-@jwt_required
-def sitch_role():
-    """
-    Переключает роль у пользователя
-    принимает json{
-    role : client
-    }
-    """
+# @auth_bp.route("/switch-role")
+# @jwt_required
+# def sitch_role():
+#     """
+#     Переключает роль у пользователя
+#     принимает json{
+#     role : client
+#     }
+#     """
 
-    data = request.get_json()
-    switch_role = data.get("role")
-    if not switch_role:
-        return jsonify({"error": "Missing role in json data"}), 400
+#     data = request.get_json()
+#     switch_role = data.get("role")
+#     if not switch_role:
+#         return jsonify({"error": "Missing role in json data"}), 400
 
-    member_id = g.member_id
-    member = Member.query.get(member_id)
+#     member_id = g.member_id
+#     member = Member.query.get(member_id)
 
-    if switch_role == "specialist":
-        existing_specialist = Specialist.query.filter_by(member_id=member.id).first()
-    if not existing_specialist:
-        specialist = Specialist(
-            member_id=member.id,
-            first_name=member.email.split("@")[0] if member.email else "",
-            last_name="",
-            specialization="",
-            base_price=0,
-            is_approved=False,
-            verification_status="pending",
-        )
-        db.session.add(specialist)
-        db.session.commit()
+#     if switch_role == "specialist":
+#         existing_specialist = Specialist.query.filter_by(member_id=member.id).first()
+#     if not existing_specialist:
+#         return jsonify({"message": "member is not specialist", "member_id": member_id}),400
 
-    roles = [r.role.code for r in member.roles]
-    if switch_role not in roles:
-        return jsonify({"error": "Role is not asigned to member"}), 400
+#     roles = [r.role.code for r in member.roles]
+#     if switch_role not in roles:
+#         return jsonify({"error": "Role is not asigned to member"}), 400
 
-    session["active_role"] = switch_role
-    db.session.commit()
+#     session["active_role"] = switch_role
+#     db.session.commit()
 
-    return jsonify(
-        {
-            "message": f"Acttive role switched to {switch_role}",
-            "active_role": switch_role,
-        }
-    ), 200
+#     return jsonify(
+#         {
+#             "message": f"Acttive role switched to {switch_role}",
+#             "active_role": switch_role,
+#         }
+#     ), 200
 
 
 @auth_bp.route("/get-token")
@@ -202,9 +192,14 @@ def whoami():
         return jsonify({"error": "Not authenticated"}), 401
     return jsonify({"member_id": member_id})
 
-@auth_bp.route("/change-role", methods=["POST"])
+@auth_bp.route("/assign-role", methods=["POST"])
 @jwt_required
 def change_role():
+
+    """
+    Назначает роль мемберу
+    принимает json {"role": "specialist" }
+    """
 
     data = request.get_json()
     role_code = data.get("role")
@@ -217,18 +212,21 @@ def change_role():
     if not role:
         return jsonify({"error": "role not found"}), 500
 
-    MemberRole.query.filter_by(member_id=member_id).delete()
+    checking_role = MemberRole.query.filter_by(member_id=member_id, role_id=role_code).first()
+    if checking_role:
+        return jsonify({"message":f"Role {role_code} already assigned", "member_id":member_id}),400
+    
+    new_role = MemberRole(
+        member_id = member_id,
+        role_id = role_code,
+        is_active = True,
+        assigned_at = datetime.utcnow() 
+    )
+    db.session.add(new_role)
 
     member = Member.query.get(member_id)
     email = member.email
 
-    new_role = MemberRole(
-        member_id=member_id,
-        role_id=role.id,
-        is_active=True,
-        assigned_at=datetime.utcnow(),
-    )
-    db.session.add(new_role)
 
     if role_code in ["client", "moderator", "admin", "owner"]:
         if not Client.query.filter_by(member_id=member_id).first():
@@ -258,50 +256,38 @@ def change_role():
 def get_me():
     member_id = g.member_id
     member = Member.query.get(member_id)
-
     if not member:
         return jsonify({"error": "Member not found"}), 404
 
-    # Ищем активную роль
-    active_role = (
-        db.session.query(Role.code)
-        .join(MemberRole)
-        .filter(MemberRole.member_id == member_id, MemberRole.is_active)
-        .first()
-    )
+    # Все роли пользователя
+    all_roles = [r.role.code for r in member.roles]
 
-    # Если роли почему-то нет (аварийный случай)
-    if not active_role:
-        client_role = Role.query.filter_by(code="client").first()
-        # Назначаем роль 'client' по умолчанию
-        new_mr = MemberRole(
-            member_id=member_id,
-            role_id=client_role.id,
-            is_active=True,
-            assigned_at=datetime.utcnow(),
-        )
-        db.session.add(new_mr)
+    # Активная роль из сессии (если нет – по умолчанию первая роль или 'client')
+    active_role = session.get('active_role')
+    if not active_role and all_roles:
+        active_role = all_roles[0]   # берём первую роль
+        session['active_role'] = active_role
+    elif not active_role and not all_roles:
+        # Пользователь вообще без ролей – создаём роль client (аварийно)
+        # client_role = Role.query.filter_by(code='client').first()
+        # if client_role:
+        #     new_mr = MemberRole(member_id=member_id, role_id=client_role.id, assigned_at=datetime.utcnow())
+        #     db.session.add(new_mr)
+        #     db.session.commit()
+        #     all_roles = ['client']
+        #     active_role = 'client'
+        #     session['active_role'] = 'client'
+            # создать профиль клиента, если нет
+            if not Client.query.filter_by(member_id=member_id).first():
+                db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
+                db.session.commit()
 
-        # Проверяем наличие профиля клиента
-        if not Client.query.filter_by(member_id=member_id).first():
-            new_client = Client(member_id=member_id, display_name=f"User{member_id}")
-            db.session.add(new_client)
-
-        db.session.commit()
-        role_code = "client"
-    else:
-        role_code = active_role[0]
-
-    roles = [r.role.code for r in member.roles]
-    active_role = session.get("active_role")
-    return jsonify(
-        {
-            "id": member.id,
-            "email": member.email,
-            "all_roles": roles,
-            "active_role": active_role,
-        }
-    ), 200
+    return jsonify({
+        "id": member.id,
+        "email": member.email,
+        "all_roles": all_roles,
+        "active_role": active_role,
+    }), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -310,8 +296,6 @@ def logout():
     Выход из системы.
     """
     session.clear()
-    if request.args.get("test") == "1":
-        return jsonify({"message": "Logged out"}), 200
     logout_url = f"{current_app.config['LOGTO_ISSUER']}/logout?post_logout_redirect_uri={current_app.config['BASE_URL']}"
     return redirect(logout_url)
 
@@ -343,3 +327,26 @@ def test_token():
     # Генерируем JWT (используйте ваш метод генерации)
     access_token = create_access_token(identity=member.auth_id)
     return jsonify({"access_token": access_token, "id": member.id}), 200
+
+
+@auth_bp.route("/me", methods=["DELETE"])
+@jwt_required
+def delete_profile():
+    """
+    удалет профил
+    """
+    member_id = g.member_id
+    member = Member.query.get(member_id) 
+    if not member:
+        return jsonify({"error": "Profile not found"}),404
+
+    data = request.get_json()
+    if not data or not data.get('confirm'):
+        return jsonify({"message": "confirm requered" }),400
+
+    db.session.delete(member)
+    db.session.commit()
+
+    session.clear()
+
+    return jsonify({"message": "Профиль удалён"}),200

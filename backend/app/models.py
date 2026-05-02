@@ -23,6 +23,12 @@ class Member(db.Model):
     specialist = db.relationship("Specialist", uselist=False, back_populates="member")
     client = db.relationship("Client", uselist=False, back_populates="member")
 
+    roles = db.relationship("MemberRole", back_populates="member", cascade="all, delete-orphan")
+    specialist = db.relationship("Specialist", uselist=False, back_populates="member", cascade="all, delete-orphan")
+    client = db.relationship("Client", uselist=False, back_populates="member", cascade="all, delete-orphan")
+    consents = db.relationship("MemberConsent", back_populates="member", cascade="all, delete-orphan")
+    documents_verified = db.relationship("SpecialistDocuments", foreign_keys="SpecialistDocuments.verified_by", cascade="all, delete-orphan")
+
 
 # ROLES
 class Role(db.Model):
@@ -59,8 +65,8 @@ def seed_role():
 class MemberRole(db.Model):
     __tablename__ = "member_role"
 
-    member_id = db.Column(db.Integer, db.ForeignKey("member.id"), primary_key=True)
-    role_id = db.Column(db.Integer, db.ForeignKey("role.id"), primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="CASCADE"), primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey("role.id", ondelete="CASCADE"), primary_key=True)
 
     is_active = db.Column(db.Boolean, default=True)
     assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -74,7 +80,7 @@ class Specialist(db.Model):
     __tablename__ = "specialist"
 
     id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer, db.ForeignKey("member.id"), unique=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="CASCADE"), unique=True)
 
     photo_url = db.Column(db.String)
     first_name = db.Column(db.String(32))
@@ -91,8 +97,8 @@ class Specialist(db.Model):
     reject_reason = db.Column(db.String, nullable=True)
 
     member = db.relationship("Member", back_populates="specialist")
-    slots = db.relationship("Slot", back_populates="specialist")
-    documents = db.relationship("SpecialistDocuments", back_populates="specialist")
+    slots = db.relationship("Slot", back_populates="specialist", cascade="all, delete-orphan")
+    documents = db.relationship("SpecialistDocuments", back_populates="specialist", cascade="all, delete-orphan")
 
 
 class SpecialistDocuments(db.Model):
@@ -101,7 +107,7 @@ class SpecialistDocuments(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     verified_by = db.Column(db.Integer, db.ForeignKey("member.id"))
-    specialist_id = db.Column(db.Integer, db.ForeignKey("specialist.id"))
+    specialist_id = db.Column(db.Integer, db.ForeignKey("specialist.id", ondelete="CASCADE"))
 
     document_title = db.Column(db.String(64), nullable=False)
     file_url = db.Column(db.String, nullable=False)
@@ -125,11 +131,11 @@ class Review(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     appointment_id = db.Column(
-        db.Integer, db.ForeignKey("appointment.id"), unique=True, nullable=False
+        db.Integer, db.ForeignKey("appointment.id", ondelete="CASCADE"), unique=True, nullable=False, 
     )
-    client_id = db.Column(db.Integer, db.ForeignKey("client.id"), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey("client.id", ondelete="CASCADE"), nullable=False)
     specialist_id = db.Column(
-        db.Integer, db.ForeignKey("specialist.id"), nullable=False
+        db.Integer, db.ForeignKey("specialist.id", ondelete="CASCADE"), nullable=False
     )
     rating = db.Column(db.Integer, nullable=False)  # 1–5
     comment = db.Column(db.Text, nullable=True)
@@ -147,7 +153,7 @@ class Review(db.Model):
 class Client(db.Model):
     __tablename__ = "client"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, ondelete="CASCADE")
     member_id = db.Column(db.Integer, db.ForeignKey("member.id"), unique=True)
 
     avatar_url = db.Column(db.String)
@@ -157,7 +163,7 @@ class Client(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     member = db.relationship("Member", back_populates="client")
-    appointments = db.relationship("Appointment", back_populates="client")
+    appointments = db.relationship("Appointment", back_populates="client", cascade="all, delete-orphan")
 
 
 # TAGS (ISSUE / METHOD)
@@ -175,7 +181,7 @@ class SpecialistIssue(db.Model):
     specialist_id = db.Column(
         db.Integer, db.ForeignKey("specialist.id", ondelete="CASCADE"), primary_key=True
     )
-    issue_id = db.Column(db.Integer, db.ForeignKey("issue.id"), primary_key=True)
+    issue_id = db.Column(db.Integer, db.ForeignKey("issue.id", ondelete="CASCADE"), primary_key=True)
 
 
 class Method(db.Model):
@@ -192,7 +198,7 @@ class SpecialistMethod(db.Model):
     specialist_id = db.Column(
         db.Integer, db.ForeignKey("specialist.id", ondelete="CASCADE"), primary_key=True
     )
-    method_id = db.Column(db.Integer, db.ForeignKey("method.id"), primary_key=True)
+    method_id = db.Column(db.Integer, db.ForeignKey("method.id", ondelete="CASCADE"), primary_key=True)
 
 
 # SLOT (Cal.com)
@@ -213,7 +219,7 @@ class Slot(db.Model):
     provider = db.Column(db.String, default="cal.com")
 
     specialist = db.relationship("Specialist", back_populates="slots")
-    appointments = db.relationship("Appointment", back_populates="slot")
+    appointments = db.relationship("Appointment", back_populates="slot", cascade="all, delete-orphan")
 
 
 # APPOINTMENT
@@ -230,8 +236,8 @@ class Appointment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    slot_id = db.Column(db.Integer, db.ForeignKey("slot.id"))
-    client_id = db.Column(db.Integer, db.ForeignKey("client.id"))
+    slot_id = db.Column(db.Integer, db.ForeignKey("slot.id", ondelete="CASCADE"))
+    client_id = db.Column(db.Integer, db.ForeignKey("client.id", ondelete="CASCADE"))
     status_id = db.Column(db.Integer, db.ForeignKey("appointment_status.id"))
 
     external_booking_id = db.Column(db.String)  # Cal.com booking ID
@@ -244,7 +250,7 @@ class Appointment(db.Model):
     client = db.relationship("Client", back_populates="appointments")
     status = db.relationship("AppointmentStatus")
 
-    payment = db.relationship("Payment", uselist=False, back_populates="appointment")
+    payment = db.relationship("Payment", uselist=False, back_populates="appointment", cascade="all, delete-orphan")
 
 
 # PAYMENT (YooKassa)
@@ -284,7 +290,7 @@ class Consent(db.Model):
     __tablename__ = "consent"
 
     id = db.Column(db.Integer, primary_key=True)
-    type_id = db.Column(db.Integer, db.ForeignKey("consent_type.id"))
+    type_id = db.Column(db.Integer, db.ForeignKey("consent_type.id", ondelete="CASCADE"))
 
     version = db.Column(db.String(16))
     content_url = db.Column(db.String)
@@ -295,7 +301,7 @@ class Consent(db.Model):
 class MemberConsent(db.Model):
     __tablename__ = "member_consent"
 
-    member_id = db.Column(db.Integer, db.ForeignKey("member.id"), primary_key=True)
-    consent_id = db.Column(db.Integer, db.ForeignKey("consent.id"), primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="CASCADE"), primary_key=True)
+    consent_id = db.Column(db.Integer, db.ForeignKey("consent.id", ondelete="CASCADE"), primary_key=True)
 
     accepted_at = db.Column(db.DateTime, default=datetime.utcnow)

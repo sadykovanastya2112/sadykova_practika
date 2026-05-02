@@ -1,5 +1,5 @@
 <script setup>
-import { apiGetUserRole } from '@/services/specialists.api'
+import { apiGetUserRole } from '@/services/api.js'
 import { Button } from 'primevue'
 import { ref } from 'vue'
 

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { Button, Select, InputText, InputNumber, DataView, Paginator, Menubar } from 'primevue'
-import { apiGetSpecialists } from '@/services/specialists.api'
+import { apiGetSpecialists } from '@/services/api.js'
 import SpecialistCard from '@/components/SpecialistCard.vue'
 
 const specialists = ref([])

@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { Button, Card, useToast } from 'primevue'
 import SpecialistDialog from './SpecialistDialog.vue'
-import { apiGetSpecialistProfile } from '@/services/specialists.api'
+import { apiGetSpecialistProfile } from '@/services/api.js'
 import AppAvatar from './AppAvatar.vue'
 
 const props = defineProps({

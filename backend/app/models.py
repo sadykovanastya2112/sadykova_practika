@@ -19,15 +19,12 @@ class Member(db.Model):
     )  #!!! не забыть переключить на False !!!
     last_active_role = db.Column(db.String(20), nullable=True)
 
-    roles = db.relationship("MemberRole", back_populates="member")
-    specialist = db.relationship("Specialist", uselist=False, back_populates="member")
-    client = db.relationship("Client", uselist=False, back_populates="member")
-
+    consents = db.relationship("MemberConsent", back_populates="member", cascade="all, delete-orphan")
     roles = db.relationship("MemberRole", back_populates="member", cascade="all, delete-orphan")
     specialist = db.relationship("Specialist", uselist=False, back_populates="member", cascade="all, delete-orphan")
     client = db.relationship("Client", uselist=False, back_populates="member", cascade="all, delete-orphan")
-    consents = db.relationship("MemberConsent", back_populates="member", cascade="all, delete-orphan")
-    documents_verified = db.relationship("SpecialistDocuments", foreign_keys="SpecialistDocuments.verified_by", cascade="all, delete-orphan")
+    verified_by = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="SET NULL"))
+    documents_verified = db.relationship("SpecialistDocuments", foreign_keys="SpecialistDocuments.verified_by")
 
 
 # ROLES
@@ -123,7 +120,7 @@ class SpecialistDocuments(db.Model):
     specialist = db.relationship("Specialist", back_populates="documents")
 
     def __repr__(self):
-        return f"<Document {self.title}>"
+        return f"<Document {self.document_title}>"
 
 
 class Review(db.Model):
@@ -153,7 +150,7 @@ class Review(db.Model):
 class Client(db.Model):
     __tablename__ = "client"
 
-    id = db.Column(db.Integer, primary_key=True, ondelete="CASCADE")
+    id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey("member.id"), unique=True)
 
     avatar_url = db.Column(db.String)
@@ -305,3 +302,4 @@ class MemberConsent(db.Model):
     consent_id = db.Column(db.Integer, db.ForeignKey("consent.id", ondelete="CASCADE"), primary_key=True)
 
     accepted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    member = db.relationship("Member", back_populates="consents")

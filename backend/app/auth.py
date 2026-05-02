@@ -35,9 +35,6 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
-    print("Login: session before set:", dict(session))
-    session["oauth_state"] = state
-    print("Login: session after set:", dict(session))
 
     return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
 
@@ -56,14 +53,6 @@ def callback():
         return jsonify({"error": f"authorizstion failed: {e.error}"}), 400
 
     id_token = token.get("id_token")  # JWT
-    if id_token:
-        session["id_token"] = id_token
-        print("\n" + "=" * 70)
-        print("  JWT токен:")
-        print(id_token)
-        print("=" * 70 + "\n")
-    else:
-        print("id_token не найден")
     # извлечение информации user'а из ID-токена (JWT)
     user_info = oauth.logto.parse_id_token(token, nonce=session.get("oauth_nonce"))
     auth_id = user_info["sub"]  # айди пользователя
@@ -207,15 +196,11 @@ def get_token():
 
 
 @auth_bp.route("/whoami")
-@jwt_required
 def whoami():
-
-    try:
-        member_id = g.member_id
-    except OAuthError as e:
-        return jsonify({"error": f"{e}"}), 500
+    member_id = session.get('member_id')
+    if not member_id:
+        return jsonify({"error": "Not authenticated"}), 401
     return jsonify({"member_id": member_id})
-
 
 @auth_bp.route("/change-role", methods=["POST"])
 @jwt_required

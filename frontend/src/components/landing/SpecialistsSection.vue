@@ -1,5 +1,5 @@
 <script setup>
-import { apiGetSpecialists } from '@/services/specialists.api'
+import { apiGetSpecialists } from '@/services/api.js'
 import SpecialistCard from '../SpecialistCard.vue'
 import { Carousel } from 'primevue'
 import { onMounted, ref } from 'vue'

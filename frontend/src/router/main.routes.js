@@ -1,21 +1,39 @@
 import CatalogView from '@/views/CatalogView.vue'
-import DashboardView from '@/views/DashboardView.vue'
+import ClientAppointmentsView from '@/views/ClientAppointmentsView.vue'
+import SpecialistSessionsView from '@/views/SpecialistSessionsView.vue'
+import SpecialistScheduleView from '@/views/SpecialistScheduleView.vue'
+import AdminControlPanelView from '@/views/AdminControlPanelView.vue'
 import LandingView from '@/views/LandingView.vue'
 
 export default [
   {
     path: '',
     component: LandingView,
-    meta: { requiresAuth: false },
+    meta: { requiredRole: null },
   },
   {
     path: 'catalog',
     component: CatalogView,
-    meta: { requiresAuth: false },
+    meta: { requiredRole: null },
   },
   {
-    path: 'dashboard',
-    component: DashboardView,
-    meta: { requiresAuth: true },
+    path: 'client/appointments',
+    component: ClientAppointmentsView,
+    meta: { requiredRole: 'client' },
+  },
+  {
+    path: 'specialist/sessions',
+    component: SpecialistSessionsView,
+    meta: { requiredRole: 'specialist' },
+  },
+  {
+    path: 'specialist/schedule',
+    component: SpecialistScheduleView,
+    meta: { requiredRole: 'specialist' },
+  },
+  {
+    path: 'admin/control-panel',
+    component: AdminControlPanelView,
+    meta: { requiredRole: 'admin' },
   },
 ]

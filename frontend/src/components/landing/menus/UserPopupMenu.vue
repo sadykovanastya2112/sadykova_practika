@@ -1,37 +1,59 @@
 <script setup>
 import TieredMenu from 'primevue/tieredmenu'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { authState, logout } from '@/services/auth.js'
+import { apiAssignRole } from '@/services/api.js'
+
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true,
+  },
+})
 
 const menu = ref(null)
 
-const items = ref([
-  { label: 'Настройки' },
+// Делаем меню реактивным, чтобы роли подтянулись, когда загрузятся
+const items = computed(() => [
+  {
+    label: 'Настройки',
+    icon: 'pi pi-cog',
+  },
+  {
+    label: 'Стать специалистом',
+    icon: 'pi pi-user-plus',
+    // Показываем, если текущая роль - клиент И в списке ролей нет специалиста
+    visible: authState.role === 'client' && !props.user.roles.includes('specialist'),
+    command: async () => {
+      await apiAssignRole('specialist')
+    },
+  },
   {
     label: 'Сменить роль',
-    items: [
-      {
-        label: 'Обновить',
-        icon: 'pi pi-refresh',
-        command: () => {
-          // Действие при клике
-        },
+    icon: 'pi pi-users',
+    // Показываем подменю выбора ролей, только если их больше одной
+    visible: props.user.roles.length > 1,
+    items: props.user.roles.map((roleName) => ({
+      label: roleName,
+      icon: roleName === authState.role ? 'pi pi-check' : '', // Помечаем текущую
+      command: () => {
+        authState.setRole(roleName) // Меняем роль в нашем реактивном объекте
       },
-      {
-        label: 'Удалить',
-        icon: 'pi pi-times',
-        command: () => {
-          // Действие при клике
-        },
-      },
-    ],
+    })),
   },
-  { label: 'Выйти' },
+  { separator: true },
+  {
+    label: 'Выйти',
+    icon: 'pi pi-sign-out',
+    command: logout,
+  },
 ])
 
 const toggle = (event) => {
   menu.value.toggle(event)
 }
 
+// Позволяем родителю вызывать этот метод
 defineExpose({ toggle })
 </script>
 

@@ -38,34 +38,26 @@ def get_specialist_slots():
 
     # запросы
     if start_date:
-        query = query.filter(Slot.start_at >= datetime.isoformat(start_date))
+        query = query.filter(Slot.start_at >= datetime.fromisoformat(start_date))
     if end_date:
-        query = query.filter(Slot.end_at >= datetime.isoformat(end_date))
+        query = query.filter(Slot.end_at <= datetime.fromisoformat(end_date))
 
     slots = query.order_by(Slot.start_at).all()
     if not slots:
-        return jsonify({"message": "empty"}),200
+        return jsonify({"message": slots}),200
     
-    if isinstance(slots, list):
-        slots_list = []
-        return jsonify([
-            {
-                "id": s.id,
-                "start_at": s.start_at.isoformat(),
-                "end_at": s.end_at.isoformat(),
-                "external_id": s.external_id,
-                "price": s.price_slot
-            }
-            for s in slots_list
-        ]), 201
-    else:
-        return jsonify({
-                "id": slots.id,
-                "start_at": slots.start_at.isoformat(),
-                "end_at": slots.end_at.isoformat(),
-                "external_id": slots.external_id,
-                "price": slots.price_slot
-            })
+    
+    return jsonify([
+        {
+            "id": s.id,
+            "start_at": s.start_at.isoformat(),
+            "end_at": s.end_at.isoformat(),
+            "external_id": s.external_id,
+            "price": s.price
+        }
+        for s in slots
+    ]), 201
+    
 
 
 

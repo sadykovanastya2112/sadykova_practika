@@ -261,6 +261,7 @@ def update_profile():
         "experience_years",
         "first_name",
         "last_name",
+        "education"
     ]
     changed = False
 

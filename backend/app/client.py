@@ -96,7 +96,7 @@ def create_appointment():
     appointment = Appointment(
         slot_id=data_slot["slot_id"],
         client_id=client.id,
-        status_id=status.id,
+        status_id=status,
         created_at=datetime.now(),
         price=price_appoinment,
     )
@@ -109,7 +109,7 @@ def create_appointment():
             "appointment_id": appointment.id,
             "slot_id": slot.id,
             "client_id": client.id,
-            "status_id": status.id,  # позже исправить
+            "status_id": status,  # позже исправить
             "price": price_appoinment,
         }
     ), 201

@@ -42,19 +42,19 @@ def upload_document():
         return jsonify({"error": "File extension not allowed"}), 400
 
     # Проверка MIME-типа через filetype
-    # file_data = file.read(1024)
-    # kind = filetype.guess(file_data)
-    # file.seek(0)
+    file_data = file.read(1024)
+    kind = filetype.guess(file_data)
+    file.seek(0)
 
-    # allowed_mime_types = [
-    #     "application/pdf",
-    #     "image/jpeg",
-    #     "image/png",
-    #     "application/msword",
-    #     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    # ]
-    # if kind is None or kind.mime not in allowed_mime_types:
-    #     return jsonify({"error": "File MIME type not allowed"}), 400
+    allowed_mime_types = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]
+    if kind is None or kind.mime not in allowed_mime_types:
+        return jsonify({"error": "File MIME type not allowed"}), 400
 
     original_filename = secure_filename(file.filename)
     ext = original_filename.rsplit(".", 1)[1].lower()
@@ -63,7 +63,7 @@ def upload_document():
     filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], new_filename)
     file.save(filepath)
 
-    document_type = request.form.get("document_type")
+    document_type = request.form.get("document_title")
     title = request.form.get("title")
     if not document_type:
         return jsonify({"error": "document_type is required"}), 400

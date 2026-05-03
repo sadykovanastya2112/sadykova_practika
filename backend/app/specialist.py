@@ -211,6 +211,7 @@ def specialist_profile(specialist_id):
 @jwt_required
 def profile():
 
+
     member_id = g.member_id
     specialist, error_response, status = get_current_specialist(member_id)
     if error_response:
@@ -258,7 +259,7 @@ def update_profile():
         "base_price",
         "photo_url",
         "experience_years",
-        "fist_name",
+        "first_name",
         "last_name",
     ]
     changed = False
@@ -298,12 +299,12 @@ def get_my_documents():
         result.append(
             {
                 "id": doc.id,
-                "document_type": doc.document_type,
+                "document_type": doc.document_title,
                 "title": doc.title,
                 "file_url": doc.file_url,
                 "verification_status": doc.verification_status,
                 "is_active": doc.is_active,
-                "uploaded_at": doc.uploaded_at.isoformat(),
+                "uploaded_at": doc.uploaded_time.isoformat(),
             }
         )
     return jsonify(result), 200

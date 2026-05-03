@@ -164,7 +164,7 @@ def get_token():
     """
     referer = request.headers.get("Referer")
 
-    allowed_referers = ["http://localhost:5000", "https://npm.safe-contact.duckdns.org"]
+    allowed_referers = ["http://localhost:5000", "https://api.safe-contact.duckdns.org"]
     if referer and not any(referer.startswith(host) for host in allowed_referers):
         return jsonify({"error": "Invalid request source"}), 403
 
@@ -246,6 +246,7 @@ def change_role():
             db.session.add(specialist)
 
     db.session.commit()
+    session['active_role'] = role_code
     return jsonify(
         {"message": f"Role {role_code} assigned", "id": f"member_id {member_id}"}
     ), 200
@@ -254,10 +255,10 @@ def change_role():
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required
 def get_me():
-    member_id = g.member_id
+    member_id = session.get('member_id')
+    if not member_id:
+        return jsonify({"error": "Not authenticated"}), 401
     member = Member.query.get(member_id)
-    if not member:
-        return jsonify({"error": "Member not found"}), 404
 
     # Все роли пользователя
     all_roles = [r.role.code for r in member.roles]
@@ -269,25 +270,28 @@ def get_me():
         session['active_role'] = active_role
     elif not active_role and not all_roles:
         # Пользователь вообще без ролей – создаём роль client (аварийно)
-        # client_role = Role.query.filter_by(code='client').first()
-        # if client_role:
-        #     new_mr = MemberRole(member_id=member_id, role_id=client_role.id, assigned_at=datetime.utcnow())
-        #     db.session.add(new_mr)
-        #     db.session.commit()
-        #     all_roles = ['client']
-        #     active_role = 'client'
-        #     session['active_role'] = 'client'
+        client_role = Role.query.filter_by(code='client').first()
+        if client_role:
+            new_mr = MemberRole(member_id=member_id, role_id=client_role.id, assigned_at=datetime.utcnow())
+            db.session.add(new_mr)
+            db.session.commit()
+            all_roles = ['client']
+            active_role = 'client'
+            session['active_role'] = 'client'
             # создать профиль клиента, если нет
             if not Client.query.filter_by(member_id=member_id).first():
                 db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
                 db.session.commit()
 
+    print("All roles:", all_roles)
     return jsonify({
         "id": member.id,
         "email": member.email,
         "all_roles": all_roles,
         "active_role": active_role,
     }), 200
+
+    
 
 
 @auth_bp.route("/logout", methods=["POST"])

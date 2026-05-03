@@ -279,7 +279,7 @@ def update_profile():
         specialist.verification_status = "pending"
 
     db.session.commit()
-    return jsonify({"message": "profile info updated", "id": member_id}), 200
+    return jsonify({"message": "profile info updated", "specialist_id": specialist.id}), 200
 
 
 @specialist_bp.route("/me/documents", methods=["GET"])

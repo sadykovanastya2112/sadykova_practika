@@ -10,7 +10,10 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 migrate = Migrate()
 bcrypt = Bcrypt()
-cors = CORS()
+cors = CORS(
+    supports_credentials=True,
+    origins=["http://localhost:5173", "https://duckdns.org", "http://127.0.0.1:5173"],
+)
 ma = Marshmallow()
 
 

@@ -170,7 +170,11 @@ def get_token():
     """
     referer = request.headers.get("Referer")
 
-    allowed_referers = ["http://localhost:5000", "https://npm.safe-contact.duckdns.org"]
+    allowed_referers = [
+        "http://localhost:5000",
+        "http://localhost:5173",
+        "https://safe-contact.duckdns.org",
+    ]
     if referer and not any(referer.startswith(host) for host in allowed_referers):
         return jsonify({"error": "Invalid request source"}), 403
 
@@ -187,15 +191,15 @@ def get_token():
 
 @auth_bp.route("/whoami")
 def whoami():
-    member_id = session.get('member_id')
+    member_id = session.get("member_id")
     if not member_id:
         return jsonify({"error": "Not authenticated"}), 401
     return jsonify({"member_id": member_id})
 
+
 @auth_bp.route("/assign-role", methods=["POST"])
 @jwt_required
 def change_role():
-
     """
     Назначает роль мемберу
     принимает json {"role": "specialist" }
@@ -212,21 +216,24 @@ def change_role():
     if not role:
         return jsonify({"error": "role not found"}), 500
 
-    checking_role = MemberRole.query.filter_by(member_id=member_id, role_id=role_code).first()
+    checking_role = MemberRole.query.filter_by(
+        member_id=member_id, role_id=role_code
+    ).first()
     if checking_role:
-        return jsonify({"message":f"Role {role_code} already assigned", "member_id":member_id}),400
-    
+        return jsonify(
+            {"message": f"Role {role_code} already assigned", "member_id": member_id}
+        ), 400
+
     new_role = MemberRole(
-        member_id = member_id,
-        role_id = role_code,
-        is_active = True,
-        assigned_at = datetime.utcnow() 
+        member_id=member_id,
+        role_id=role_code,
+        is_active=True,
+        assigned_at=datetime.utcnow(),
     )
     db.session.add(new_role)
 
     member = Member.query.get(member_id)
     email = member.email
-
 
     if role_code in ["client", "moderator", "admin", "owner"]:
         if not Client.query.filter_by(member_id=member_id).first():
@@ -263,10 +270,10 @@ def get_me():
     all_roles = [r.role.code for r in member.roles]
 
     # Активная роль из сессии (если нет – по умолчанию первая роль или 'client')
-    active_role = session.get('active_role')
+    active_role = session.get("active_role")
     if not active_role and all_roles:
-        active_role = all_roles[0]   # берём первую роль
-        session['active_role'] = active_role
+        active_role = all_roles[0]  # берём первую роль
+        session["active_role"] = active_role
     elif not active_role and not all_roles:
         # Пользователь вообще без ролей – создаём роль client (аварийно)
         # client_role = Role.query.filter_by(code='client').first()
@@ -277,17 +284,19 @@ def get_me():
         #     all_roles = ['client']
         #     active_role = 'client'
         #     session['active_role'] = 'client'
-            # создать профиль клиента, если нет
-            if not Client.query.filter_by(member_id=member_id).first():
-                db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
-                db.session.commit()
+        # создать профиль клиента, если нет
+        if not Client.query.filter_by(member_id=member_id).first():
+            db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
+            db.session.commit()
 
-    return jsonify({
-        "id": member.id,
-        "email": member.email,
-        "all_roles": all_roles,
-        "active_role": active_role,
-    }), 200
+    return jsonify(
+        {
+            "id": member.id,
+            "email": member.email,
+            "all_roles": all_roles,
+            "active_role": active_role,
+        }
+    ), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -336,17 +345,17 @@ def delete_profile():
     удалет профил
     """
     member_id = g.member_id
-    member = Member.query.get(member_id) 
+    member = Member.query.get(member_id)
     if not member:
-        return jsonify({"error": "Profile not found"}),404
+        return jsonify({"error": "Profile not found"}), 404
 
     data = request.get_json()
-    if not data or not data.get('confirm'):
-        return jsonify({"message": "confirm requered" }),400
+    if not data or not data.get("confirm"):
+        return jsonify({"message": "confirm requered"}), 400
 
     db.session.delete(member)
     db.session.commit()
 
     session.clear()
 
-    return jsonify({"message": "Профиль удалён"}),200
+    return jsonify({"message": "Профиль удалён"}), 200

@@ -22,3 +22,7 @@ node_modules/
 __pycache__/
 .venv/
 .pytest_cache/
+
+# Sessions
+flask_session/
+*.session.sql

@@ -6,14 +6,15 @@ const API_URL = import.meta.env.VITE_API_URL
 const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
+  withCredentials: true,
 })
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      authState.clear()
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/login`
+      //authState.clear()
+      //window.location.href = `${import.meta.env.VITE_API_URL}/auth/login`
     }
     return Promise.reject(error)
   },
@@ -67,7 +68,7 @@ export const apiGetUserIdentity = async () => {
   const currentRole = authState.role
   try {
     if (currentRole === 'client') {
-      const response = await api.get('/client/me')
+      const response = await api.get('/clients/me')
       return { displayName: response.data.me.display_name, photo: response.data.me.photo_url }
     } else if (currentRole === 'specialist') {
       const response = await api.get('/specialist/me')

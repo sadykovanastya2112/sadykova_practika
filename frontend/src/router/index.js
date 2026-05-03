@@ -14,7 +14,7 @@ const router = createRouter({
     },
     {
       path: '/403',
-      name: 'AccesDenied',
+      name: 'AccessDenied',
       component: () => import('@/views/AccessDeniedView.vue'),
     },
   ],
@@ -31,7 +31,7 @@ router.beforeEach(async (to, from, next) => {
       authState.setRole(userRoles[0])
     } catch (e) {
       console.error(e)
-      logout()
+      //logout()
     }
   }
 

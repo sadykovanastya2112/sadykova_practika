@@ -18,14 +18,6 @@ auth_bp = Blueprint("auth", __name__)
 def login():
     """
     Инициирует аутентификацию через Logto.
-    ---
-    tags:
-      - Auth
-    summary: Начать вход через Logto
-    description: Перенаправляет пользователя на страницу входа Logto. Сохраняет state и nonce в сессии.
-    responses:
-      302:
-        description: Редирект на страницу авторизации Logto.
     """
 
     # генерим рандомною строку
@@ -35,6 +27,7 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
+    print("Callback: session state:", session.get("oauth_state"))
 
     return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
 
@@ -120,6 +113,7 @@ def callback():
 
     print("Callback: session state:", session.get("oauth_state"))
 
+    #return redirect("/auth/whoami")
     return redirect(f"{current_app.config['BASE_URL']}/catalog")
 
 
@@ -255,6 +249,7 @@ def change_role():
             db.session.add(specialist)
 
     db.session.commit()
+    session['active_role'] = role_code
     return jsonify(
         {"message": f"Role {role_code} assigned", "id": f"member_id {member_id}"}
     ), 200
@@ -263,10 +258,10 @@ def change_role():
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required
 def get_me():
-    member_id = g.member_id
+    member_id = session.get('member_id')
+    if not member_id:
+        return jsonify({"error": "Not authenticated"}), 401
     member = Member.query.get(member_id)
-    if not member:
-        return jsonify({"error": "Member not found"}), 404
 
     # Все роли пользователя
     all_roles = [r.role.code for r in member.roles]
@@ -278,27 +273,28 @@ def get_me():
         session["active_role"] = active_role
     elif not active_role and not all_roles:
         # Пользователь вообще без ролей – создаём роль client (аварийно)
-        # client_role = Role.query.filter_by(code='client').first()
-        # if client_role:
-        #     new_mr = MemberRole(member_id=member_id, role_id=client_role.id, assigned_at=datetime.utcnow())
-        #     db.session.add(new_mr)
-        #     db.session.commit()
-        #     all_roles = ['client']
-        #     active_role = 'client'
-        #     session['active_role'] = 'client'
-        # создать профиль клиента, если нет
-        if not Client.query.filter_by(member_id=member_id).first():
-            db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
+        client_role = Role.query.filter_by(code='client').first()
+        if client_role:
+            new_mr = MemberRole(member_id=member_id, role_id=client_role.id, assigned_at=datetime.utcnow())
+            db.session.add(new_mr)
             db.session.commit()
+            all_roles = ['client']
+            active_role = 'client'
+            session['active_role'] = 'client'
+            # создать профиль клиента, если нет
+            if not Client.query.filter_by(member_id=member_id).first():
+                db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
+                db.session.commit()
 
-    return jsonify(
-        {
-            "id": member.id,
-            "email": member.email,
-            "all_roles": all_roles,
-            "active_role": active_role,
-        }
-    ), 200
+    print("All roles:", all_roles)
+    return jsonify({
+        "id": member.id,
+        "email": member.email,
+        "all_roles": all_roles,
+        "active_role": active_role,
+    }), 200
+
+    
 
 
 @auth_bp.route("/logout", methods=["POST"])

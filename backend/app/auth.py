@@ -212,9 +212,6 @@ def change_role():
         return jsonify({"error": "invalid role"}), 400
 
     member_id = g.member_id
-    role = Role.query.filter_by(code=role_code).first()
-    if not role:
-        return jsonify({"error": "role not found"}), 500
 
     role = Role.query.filter_by(code=role_code).first()
     if not role:
@@ -231,7 +228,7 @@ def change_role():
 
     new_role = MemberRole(
         member_id=member_id,
-        role_id=role_code,
+        role_id=role.id,
         is_active=True,
         assigned_at=datetime.utcnow(),
     )

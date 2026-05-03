@@ -3,7 +3,7 @@ import { authState } from './auth'
 
 const API_URL = import.meta.env.VITE_API_URL
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_URL,
   timeout: 10000,
   withCredentials: true,
@@ -13,8 +13,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      //authState.clear()
-      //window.location.href = `${import.meta.env.VITE_API_URL}/auth/login`
+      authState.clear()
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/login`
     }
     return Promise.reject(error)
   },

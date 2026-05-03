@@ -31,7 +31,7 @@ router.beforeEach(async (to, from, next) => {
       authState.setRole(userRoles[0])
     } catch (e) {
       console.error(e)
-      //logout()
+      logout()
     }
   }
 

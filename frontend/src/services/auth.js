@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { api } from './api'
 
 export const authState = reactive({
   role: localStorage.getItem('user_role') || null,
@@ -18,7 +19,12 @@ export const login = () => {
   window.location.href = `${import.meta.env.VITE_API_URL}/auth/login` //не должно ли быть return?
 }
 
-export const logout = () => {
+export const logout = async () => {
   authState.clear()
-  window.location.href = `${import.meta.env.VITE_API_URL}/auth/logout`
+  try {
+    const response = await api.post('/auth/assign-role')
+    return response.data
+  } catch (error) {
+    throw error
+  }
 }

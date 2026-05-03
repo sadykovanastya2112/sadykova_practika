@@ -12,7 +12,11 @@ migrate = Migrate()
 bcrypt = Bcrypt()
 cors = CORS(
     supports_credentials=True,
-    origins=["http://localhost:5173", "https://duckdns.org", "http://127.0.0.1:5173"],
+    origins=[
+        "http://localhost:5173",
+        "https://safe-contact.duckdns.org",
+        "http://127.0.0.1:5173",
+    ],
 )
 ma = Marshmallow()
 

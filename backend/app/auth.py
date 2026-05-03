@@ -164,7 +164,7 @@ def get_token():
     """
     referer = request.headers.get("Referer")
 
-    allowed_referers = ["http://localhost:5000", "https://api.safe-contact.duckdns.org"]
+    allowed_referers = ["http://localhost:5173", "https://safe-contact.duckdns.org"]
     if referer and not any(referer.startswith(host) for host in allowed_referers):
         return jsonify({"error": "Invalid request source"}), 403
 

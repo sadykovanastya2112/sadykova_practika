@@ -109,7 +109,7 @@ def create_appointment():
             "appointment_id": appointment.id,
             "slot_id": slot.id,
             "client_id": client.id,
-            "status_id": status,  # позже исправить
+            "status_id": status, 
             "price": price_appoinment,
         }
     ), 201

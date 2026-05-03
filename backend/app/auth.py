@@ -216,9 +216,14 @@ def change_role():
     if not role:
         return jsonify({"error": "role not found"}), 500
 
+    role = Role.query.filter_by(code=role_code).first()
+    if not role:
+        return jsonify({"error": "role not found"}), 400
+
     checking_role = MemberRole.query.filter_by(
-        member_id=member_id, role_id=role_code
+        member_id=member_id, role_id=role.id
     ).first()
+
     if checking_role:
         return jsonify(
             {"message": f"Role {role_code} already assigned", "member_id": member_id}

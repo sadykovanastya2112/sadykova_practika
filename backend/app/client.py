@@ -129,7 +129,7 @@ def client_profile():
     profile_data = {
         "id": client.id,
         "member_id": member_id,
-        "display_name": member.display_name,
+        "display_name": client.display_name,
         "bio": client.bio,
         "avatar_url": client.avatar_url,
         "created_at": client.created_at.isoformat() if client.created_at else None,

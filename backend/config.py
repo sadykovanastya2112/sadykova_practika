@@ -6,7 +6,7 @@ load_dotenv()
 
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
+    SECRET_KEY = os.getenv("SECRET_KEY")
     LOGTO_CLIENT_ID = os.getenv("LOGTO_CLIENT_ID")
     LOGTO_CLIENT_SECRET = os.getenv("LOGTO_CLIENT_SECRET")
     LOGTO_ISSUER = os.getenv("LOGTO_ISSUER")

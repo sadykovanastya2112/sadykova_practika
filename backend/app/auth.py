@@ -18,14 +18,6 @@ auth_bp = Blueprint("auth", __name__)
 def login():
     """
     Инициирует аутентификацию через Logto.
-    ---
-    tags:
-      - Auth
-    summary: Начать вход через Logto
-    description: Перенаправляет пользователя на страницу входа Logto. Сохраняет state и nonce в сессии.
-    responses:
-      302:
-        description: Редирект на страницу авторизации Logto.
     """
 
     # генерим рандомною строку
@@ -35,6 +27,7 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
+    print("Callback: session state:", session.get("oauth_state"))
 
     return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
 
@@ -120,6 +113,7 @@ def callback():
 
     print("Callback: session state:", session.get("oauth_state"))
 
+    #return redirect("/auth/whoami")
     return redirect(f"{current_app.config['BASE_URL']}/catalog")
 
 

@@ -1,9 +1,12 @@
-from flask import Blueprint, g, jsonify, request
+import os
+
+from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy import func
 
 from app.extension import db
 from app.jwt_auth import jwt_required
 from app.models import Member, Review, Specialist, SpecialistDocuments
+from app.client import validate_and_save_image
 
 specialist_bp = Blueprint("specialist", __name__)
 
@@ -239,6 +242,30 @@ def profile():
 
     return jsonify({"me": profile_data, "id": specialist.id})
 
+
+
+@specialist_bp.route("/upload-photo", methods=["POST"])
+@jwt_required
+def upload_specialist_photo():
+    member_id = g.member_id
+    specialist, error, status = get_current_specialist(member_id)
+    if error:
+        return error, status
+    if 'photo' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['photo']
+    new_filename, err = validate_and_save_image(file, member_id)
+    if err:
+        return jsonify({"error": err}), 400
+    # удаляем старый файл
+    old = specialist.photo_url
+    if old:
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old.split('/')[-1])
+        if os.path.exists(old_path):
+            os.remove(old_path)
+    specialist.photo_url = f"/uploads/{new_filename}"
+    db.session.commit()
+    return jsonify({"photo_url": specialist.photo_url}), 200
 
 @specialist_bp.route("/update", methods=["PUT"])
 @jwt_required

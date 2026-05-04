@@ -12,9 +12,52 @@ from app.models import Specialist, SpecialistDocuments
 documents_bp = Blueprint("documents", __name__)
 
 
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "doc", "docx"}
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+def validate_and_save_document_file(file, specialist_id, allowed_extensions=None, max_size_mb=10):
+    """
+    Проверяет файл документа (расширение, MIME, размер) и сохраняет его в папку uploads.
+    Возвращает (new_filename, error_message). Если ошибка – new_filename = None.
+    """
+    if allowed_extensions is None:
+        allowed_extensions = {"pdf", "jpg", "jpeg", "png", "doc", "docx"}
+
+    # 1. Проверка имени файла
+    if file.filename == '':
+        return None, "No selected file"
+
+    # 2. Проверка расширения
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in allowed_extensions:
+        return None, f"File extension not allowed. Allowed: {', '.join(allowed_extensions)}"
+
+    # 3. Проверка MIME-типа по сигнатуре
+    file_data = file.read(1024)
+    kind = filetype.guess(file_data)
+    file.seek(0)  # возвращаем указатель в начало
+    allowed_mime_types = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ]
+    if kind is None or kind.mime not in allowed_mime_types:
+        return None, "File MIME type not allowed (only PDF, JPEG, PNG, DOC, DOCX)"
+
+    # 4. Проверка размера (опционально)
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > max_size_mb * 1024 * 1024:
+        return None, f"File size exceeds {max_size_mb} MB"
+
+    # 5. Генерация уникального имени и сохранение
+    original_filename = secure_filename(file.filename)
+    timestamp = datetime.utcnow().timestamp()
+    new_filename = f"specialist_{specialist_id}_{timestamp}.{ext}"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
+    file.save(filepath)
+    return new_filename, None
+
 
 
 def get_current_specialist(member_id):
@@ -35,33 +78,12 @@ def upload_document():
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+   
 
-    if not allowed_file(file.filename):
-        return jsonify({"error": "File extension not allowed"}), 400
+    new_filename, err = validate_and_save_document_file(file, specialist.id)
+    if err:
+        return jsonify({"error": err}), 400
 
-    # Проверка MIME-типа через filetype
-    file_data = file.read(1024)
-    kind = filetype.guess(file_data)
-    file.seek(0)
-
-    allowed_mime_types = [
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ]
-    if kind is None or kind.mime not in allowed_mime_types:
-        return jsonify({"error": "File MIME type not allowed"}), 400
-
-    original_filename = secure_filename(file.filename)
-    ext = original_filename.rsplit(".", 1)[1].lower()
-    timestamp = datetime.utcnow().timestamp()
-    new_filename = f"specialist_{specialist.id}_{timestamp}.{ext}"
-    filepath = os.path.join(current_app.config["UPLOAD_FOLDER"], new_filename)
-    file.save(filepath)
 
     document_type = request.form.get("document_title")
     title = request.form.get("title")
@@ -83,7 +105,7 @@ def upload_document():
         document_type=document_type,
         title=title,
         file_url=f"/uploads/{new_filename}",
-        original_name=original_filename,
+        original_name=secure_filename(file.filename),
         is_active=True,
         uploaded_at=datetime.utcnow(),
         verification_status="pending",

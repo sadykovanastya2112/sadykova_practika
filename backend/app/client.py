@@ -181,36 +181,76 @@ def client_profile():
     return jsonify({"me": profile_data, "clietn_id": client.id, "member_id": member_id})
 
 
-@clients_bp.route("/me", methods=["PUT"])
+
+@clients_bp.route("/upload-avatar", methods=["POST"])
 @jwt_required
-def client_profile_update():
+def upload_client_avatar():
     member_id = g.member_id
     client, error_response, status = get_current_client(member_id)
     if error_response:
         return error_response, status
 
-    # Обрабатываем текстовые поля из form-data
-    display_name = request.form.get("display_name")
-    bio = request.form.get("bio")
-    if display_name:
-        client.display_name = display_name
-    if bio:
-        client.bio = bio
+    if 'avatar' not in request.files:
+        return jsonify({"error": "No file part"}), 400
 
-    # Обрабатываем файл
-    file = request.files.get('avatar')
-    if file and file.filename != '':
+    file = request.files['avatar']
+    new_filename, error = validate_and_save_image(file, member_id)
+    if error:
+        return jsonify({"error": error}), 400
+
+    # Удаляем старый файл
+    old_avatar_url = client.avatar_url
+    if old_avatar_url:
+        old_filename = old_avatar_url.split('/')[-1]
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    # Обновляем URL аватарки
+    client.avatar_url = f"/uploads/{new_filename}"
+    db.session.commit()
+
+    return jsonify({"avatar_url": client.avatar_url}), 200
+
+
+
+@clients_bp.route("/me", methods=["PUT"])
+@jwt_required
+def client_profile_update():
+
+    member_id = g.member_id
+    client, error_response, status = get_current_client(member_id)
+    if error_response:
+        return error_response, status
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "no json data"}), 400
+
+    allowed_fields = [
+        "display_name",
+        "bio",
+        "avatar_url",
+    ]
+
+    file = request.files["avatar"]
+
+    if file:
         new_filename, error = validate_and_save_image(file, member_id)
-        if error:
-            return jsonify({"error": error}), 400
-        # удаляем старый файл
-        old_avatar_url = client.avatar_url
-        if old_avatar_url:
-            old_filename = old_avatar_url.split('/')[-1]
-            old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_filename)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        client.avatar_url = f"/uploads/{new_filename}"
+    if error:
+        return jsonify({"error": error}), 400
+
+
+    old_avatar_url = client.avatar_url
+    if old_avatar_url:
+        old_filename = old_avatar_url.split('/')[-1]
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    for item in allowed_fields:
+        if item in data:
+            setattr(client, item, data[item])
 
     db.session.commit()
     return jsonify({"message": "profile info updated", "id": member_id}), 200

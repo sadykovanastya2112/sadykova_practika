@@ -62,7 +62,7 @@ const submitChanges = async () => {
     payload = {
       display_name: profileData.value.display_name,
       bio: profileData.value.bio,
-      avatar_url: profileData.value.photo_url, // Уточните поле, в GET было photo_url или avatar_url? В API на запись avatar_url
+      avatar_url: profileData.value.avatar_url, // Уточните поле, в GET было photo_url или avatar_url? В API на запись avatar_url
     }
   } else {
     payload = {
@@ -223,7 +223,20 @@ const handleDeleteAccount = () => {
 
     <!-- Ссылка на аватар (общая) -->
     <IftaLabel>
-      <InputText id="photo" v-model="profileData.photo_url" :disabled="!isEditing" class="w-full" />
+      <InputText
+        id="photo"
+        v-if="role === 'client'"
+        v-model="profileData.avatar_url"
+        :disabled="!isEditing"
+        class="w-full"
+      />
+      <InputText
+        id="photo"
+        v-else
+        v-model="profileData.photo_url"
+        :disabled="!isEditing"
+        class="w-full"
+      />
       <label for="photo">Ссылка на фото/аватар</label>
     </IftaLabel>
 

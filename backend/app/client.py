@@ -181,7 +181,6 @@ def client_profile():
     return jsonify({"me": profile_data, "clietn_id": client.id, "member_id": member_id})
 
 
-
 @clients_bp.route("/upload-avatar", methods=["POST"])
 @jwt_required
 def upload_client_avatar():
@@ -193,10 +192,10 @@ def upload_client_avatar():
     if error_response:
         return error_response, status
 
-    if 'avatar' not in request.files:
+    if "avatar" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
-    file = request.files['avatar']
+    file = request.files["avatar"]
     new_filename, error = validate_and_save_image(file, member_id)
     if error:
         return jsonify({"error": error}), 400
@@ -204,8 +203,8 @@ def upload_client_avatar():
     # Удаляем старый файл
     old_avatar_url = client.avatar_url
     if old_avatar_url:
-        old_filename = old_avatar_url.split('/')[-1]
-        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_filename)
+        old_filename = old_avatar_url.split("/")[-1]
+        old_path = os.path.join(current_app.config["UPLOAD_FOLDER"], old_filename)
         if os.path.exists(old_path):
             os.remove(old_path)
 
@@ -214,7 +213,6 @@ def upload_client_avatar():
     db.session.commit()
 
     return jsonify({"avatar_url": client.avatar_url}), 200
-
 
 
 @clients_bp.route("/me", methods=["PUT"])
@@ -235,21 +233,6 @@ def client_profile_update():
         "bio",
         "avatar_url",
     ]
-
-    file = request.files["avatar"]
-
-    if file:
-        new_filename, error = validate_and_save_image(file, member_id)
-    if error:
-        return jsonify({"error": error}), 400
-
-
-    old_avatar_url = client.avatar_url
-    if old_avatar_url:
-        old_filename = old_avatar_url.split('/')[-1]
-        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_filename)
-        if os.path.exists(old_path):
-            os.remove(old_path)
 
     for item in allowed_fields:
         if item in data:
@@ -280,16 +263,24 @@ def show_appointment():
         # Через слот получаем специалиста
         specialist = slot.specialist if slot else None
 
-        appointments_list.append({
-            "appointment_id": appoint.id,
-            "slot_id": appoint.slot_id,
-            "status_label": appointment_status.label if appointment_status else None,
-            "price": appoint.price,
-            "specialist_id": specialist.id if specialist else None,
-            "specialist_first_name": specialist.first_name if specialist else None,
-            "specialist_last_name": specialist.last_name if specialist else None,
-            "start_at": slot.start_at.isoformat() if slot and slot.start_at else None,
-            "end_at": slot.end_at.isoformat() if slot and slot.end_at else None,
-            "created_at": appoint.created_at.isoformat() if appoint.created_at else None,
-        })
+        appointments_list.append(
+            {
+                "appointment_id": appoint.id,
+                "slot_id": appoint.slot_id,
+                "status_label": appointment_status.label
+                if appointment_status
+                else None,
+                "price": appoint.price,
+                "specialist_id": specialist.id if specialist else None,
+                "specialist_first_name": specialist.first_name if specialist else None,
+                "specialist_last_name": specialist.last_name if specialist else None,
+                "start_at": slot.start_at.isoformat()
+                if slot and slot.start_at
+                else None,
+                "end_at": slot.end_at.isoformat() if slot and slot.end_at else None,
+                "created_at": appoint.created_at.isoformat()
+                if appoint.created_at
+                else None,
+            }
+        )
     return jsonify(appointments_list), 200

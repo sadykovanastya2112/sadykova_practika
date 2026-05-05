@@ -69,7 +69,7 @@ export const apiGetUserIdentity = async () => {
   try {
     if (currentRole === 'client') {
       const response = await api.get('/clients/me')
-      return { displayName: response.data.me.display_name, photo: response.data.me.photo_url }
+      return { displayName: response.data.me.display_name, photo: response.data.me.avatar_url }
     } else if (currentRole === 'specialist') {
       const response = await api.get('/specialist/me')
       return { displayName: response.data.me.first_name, photo: response.data.me.photo_url }

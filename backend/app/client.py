@@ -185,6 +185,9 @@ def client_profile():
 @clients_bp.route("/upload-avatar", methods=["POST"])
 @jwt_required
 def upload_client_avatar():
+    """
+    Принимает form-data с ключом 'avatar'
+    """
     member_id = g.member_id
     client, error_response, status = get_current_client(member_id)
     if error_response:
@@ -281,7 +284,7 @@ def show_appointment():
     for appoint in appointments:
         appointment_status = AppointmentStatus.query.get(appoint.status_id)
 
-        slot = appoint.slot_id
+        slot = appoint.slot
         specialist = slot.specialist
 
         (

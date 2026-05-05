@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import filetype
 from flask import Blueprint, current_app, g, jsonify, request
@@ -284,3 +284,45 @@ def show_appointment():
             }
         )
     return jsonify(appointments_list), 200
+
+
+
+
+
+
+@clients_bp.route("/appointments/<int:appointment_id>/meeting-link", methods=["GET"])
+@jwt_required
+def get_meeting_link(appointment_id):
+    """
+    Возвращает ссылку на Jitsi-комнату для оплаченного бронирования.
+    """
+    member_id = g.member_id
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({"error": "Appointment not found"}), 404
+
+    # Проверяем, что текущий пользователь – клиент или специалист, связанный с бронированием
+    client_member_id = appointment.client.member_id
+    specialist_member_id = appointment.slot.specialist.member_id
+    if member_id not in (client_member_id, specialist_member_id):
+        return jsonify({"error": "Access denied"}), 403
+
+    # Проверяем статус оплаты (должен быть 'paid')
+    paid_status = AppointmentStatus.query.filter_by(code="paid").first()
+    if not paid_status:
+        return jsonify({"error": "Status 'paid' not found in DB"}), 500
+    if appointment.status_id != paid_status.id:
+        return jsonify({"error": "Appointment not paid"}), 403
+
+
+    start_at = appointment.slot.start_at
+
+    # Генерируем уникальное имя комнаты (например, на основе ID бронирования)
+    room_name = f"psych-help-{appointment_id}"
+    meeting_link = f"https://meet.jit.si/{room_name}"
+
+    return jsonify({
+        "meeting_link": meeting_link,
+        "room_name": room_name,
+        "available_from": start_at
+    }), 200

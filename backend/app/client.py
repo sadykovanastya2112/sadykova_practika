@@ -292,9 +292,8 @@ def show_appointment():
 
 
 
-appointments_bp = Blueprint("appointments", __name__)
 
-@appointments_bp.route("/appointments/<int:appointment_id>/meeting-link", methods=["GET"])
+@clients_bp.route("/appointments/<int:appointment_id>/meeting-link", methods=["GET"])
 @jwt_required
 def get_meeting_link(appointment_id):
     """

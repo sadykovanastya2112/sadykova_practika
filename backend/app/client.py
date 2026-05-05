@@ -236,12 +236,6 @@ def client_profile_update():
         "avatar_url",
     ]
 
-    file = request.files["avatar"]
-
-    if file:
-        new_filename, error = validate_and_save_image(file, member_id)
-    if error:
-        return jsonify({"error": error}), 400
 
 
     old_avatar_url = client.avatar_url

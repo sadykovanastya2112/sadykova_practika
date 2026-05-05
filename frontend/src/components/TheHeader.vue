@@ -1,7 +1,6 @@
 <script setup>
-import Menubar from 'primevue/menubar'
 import UserPopupMenu from './landing/menus/UserPopupMenu.vue'
-import { Button } from 'primevue'
+import { Button, Menubar } from 'primevue'
 import { ref, watch, computed } from 'vue'
 import { authState, login } from '@/services/auth.js'
 import { apiGetUserRoles, apiGetUserIdentity } from '@/services/api.js'

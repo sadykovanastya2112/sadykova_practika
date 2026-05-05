@@ -2,7 +2,7 @@
 import TheFooter from '@/components/TheFooter.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { RouterView } from 'vue-router'
-import { ScrollTop, Toast } from 'primevue'
+import { ScrollTop, Toast, ConfirmDialog, DynamicDialog } from 'primevue'
 </script>
 
 <template>
@@ -18,5 +18,7 @@ import { ScrollTop, Toast } from 'primevue'
     </footer>
   </div>
   <Toast />
+  <ConfirmDialog />
+  <DynamicDialog />
   <ScrollTop />
 </template>

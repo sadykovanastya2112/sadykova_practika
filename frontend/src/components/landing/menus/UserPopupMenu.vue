@@ -1,8 +1,9 @@
 <script setup>
-import TieredMenu from 'primevue/tieredmenu'
+import { TieredMenu, useDialog } from 'primevue'
 import { ref, computed } from 'vue'
 import { authState, logout } from '@/services/auth.js'
 import { apiAssignRole } from '@/services/api.js'
+import ProfileEditForm from '@/components/ProfileEditForm.vue'
 
 const props = defineProps({
   user: {
@@ -13,19 +14,44 @@ const props = defineProps({
 
 const menu = ref(null)
 
+const dialog = useDialog()
+
+const openProfile = () => {
+  dialog.open(ProfileEditForm, {
+    props: {
+      header: 'Профиль пользователя',
+      style: { width: '450px' },
+      modal: true,
+      breakpoints: {
+        '960px': '75vw',
+        '640px': '90vw',
+      },
+    },
+  })
+}
+
 // Делаем меню реактивным, чтобы роли подтянулись, когда загрузятся
 const items = computed(() => [
   {
     label: 'Настройки',
     icon: 'pi pi-cog',
+    visible: ['client', 'specialist'].includes(authState.role),
+    command: openProfile,
   },
   {
     label: 'Стать специалистом',
     icon: 'pi pi-user-plus',
-    // Показываем, если текущая роль - клиент И в списке ролей нет специалиста
-    visible: authState.role === 'client' && !props.user.roles.includes('specialist'),
+    visible: !props.user.roles.includes('specialist'),
     command: async () => {
       await apiAssignRole('specialist')
+    },
+  },
+  {
+    label: 'Стать клиентом',
+    icon: 'pi pi-user-plus',
+    visible: !props.user.roles.includes('client'),
+    command: async () => {
+      await apiAssignRole('client')
     },
   },
   {

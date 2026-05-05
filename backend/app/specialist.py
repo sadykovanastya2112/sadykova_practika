@@ -211,7 +211,6 @@ def specialist_profile(specialist_id):
 @jwt_required
 def profile():
 
-
     member_id = g.member_id
     specialist, error_response, status = get_current_specialist(member_id)
     if error_response:
@@ -261,7 +260,7 @@ def update_profile():
         "experience_years",
         "first_name",
         "last_name",
-        "education"
+        "education",
     ]
     changed = False
 
@@ -274,12 +273,15 @@ def update_profile():
             setattr(specialist, item, data[item])
             changed = True
 
-    if changed and specialist.is_approved:
+    if changed:
         specialist.is_approved = False
         specialist.verification_status = "pending"
+        specialist.rejection_reason = None
 
     db.session.commit()
-    return jsonify({"message": "profile info updated", "specialist_id": specialist.id}), 200
+    return jsonify(
+        {"message": "profile info updated", "specialist_id": specialist.id}
+    ), 200
 
 
 @specialist_bp.route("/me/documents", methods=["GET"])

@@ -82,8 +82,77 @@ export const apiGetUserIdentity = async () => {
   return { displayName: '', photo: '' }
 }
 
+export const apiGetUserProfile = async () => {
+  const currentRole = authState.role
+  try {
+    if (currentRole === 'client') {
+      const response = await api.get('/clients/me')
+      return response.data.me
+    } else if (currentRole === 'specialist') {
+      const response = await api.get('/specialist/me')
+      return response.data.me
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
+export const apiUpdateProfile = async (data) => {
+  const currentRole = authState.role
+  try {
+    if (currentRole === 'client') {
+      const response = await api.put('/clients/me', data)
+      return response.data
+    } else if (currentRole === 'specialist') {
+      const response = await api.put('/specialist/update', data)
+      return response.data
+    }
+  } catch (e) {
+    throw e
+  }
+}
+
+export const apiDeleteUser = async () => {
+  const response = await api.delete('auth/me', {
+    headers: { 'Content-Type': 'application/json' },
+    data: { confirm: true },
+  })
+  authState.clear()
+  return response.data
+}
+
 export const apiGetToken = async () => {
   const response = await api.get('/auth/get-token')
   const token = response.data.access_token
   return token
+}
+
+export const apiGetPendingSpecialists = async (page = 1, perPage = 20) => {
+  const response = await api.get('/moderation/specialists/pending', {
+    params: { page: page, per_page: perPage },
+  })
+  return response.data
+}
+
+export const apiModerateSpecialist = async (id, action, reason = null) => {
+  const response = await api.post(`/moderation/specialists/${id}`, {
+    action,
+    reason,
+  })
+  return response.data
+}
+
+export const apiGetSlots = async (start, end) => {
+  const response = await api.get('/slots/get', { params: { start_date: start, end_date: end } })
+  return response.data
+}
+
+export const apiCreateSlots = async (slotsData) => {
+  const response = await api.post('/slots/create', slotsData)
+  return response.data
+}
+
+export const apiDeleteSlot = async (id) => {
+  const response = await api.delete(`/slots/delete/${id}`)
+  return response.data
 }

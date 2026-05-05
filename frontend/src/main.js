@@ -8,6 +8,8 @@ import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import Aura from '@primeuix/themes/aura'
+import ConfirmationService from 'primevue/confirmationservice'
+import DialogService from 'primevue/dialogservice'
 
 const app = createApp(App)
 
@@ -22,6 +24,8 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(ConfirmationService)
+app.use(DialogService)
 app.use(ToastService)
 
 app.mount('#app')

@@ -262,46 +262,34 @@ def client_profile_update():
 @clients_bp.route("/appointments", methods=["GET"])
 @jwt_required
 def show_appointment():
-    """
-    список бронирований у клиента.
-    """
-
-    # получаем клиента
     member_id = g.member_id
     client, error_response, status = get_current_client(member_id)
     if error_response:
         return error_response, status
 
-    # if client.member_id == slot.specialist.member_id:
-    #   return jsonify({"error":"психолог не может сам у себя забронировать слот"}),400
-
-    # получаем все бронирования клиента
     appointments = Appointment.query.filter_by(client_id=client.id).all()
     if not appointments:
         return jsonify([]), 200
 
     appointments_list = []
     for appoint in appointments:
+        # Получаем объект статуса (если есть)
         appointment_status = AppointmentStatus.query.get(appoint.status_id)
-
+        # Получаем объект слота через отношение (не slot_id)
         slot = appoint.slot
-        specialist = slot.specialist
+        # Через слот получаем специалиста
+        specialist = slot.specialist if slot else None
 
-        (
-            appointments_list.append(
-                {
-                    "appointment_id": appoint.id,
-                    "slot_id": appoint.slot_id,
-                    "status_label": appointment_status.label,
-                    "price": appoint.price,
-                    "specialist_id": specialist.id,
-                    "specialist_first_name": specialist.first_name,
-                    "specialist_last_name": specialist.last_name,
-                    "start_at": slot.start_at,
-                    "end_at": slot.end_at,
-                    "created_at": appoint.created_at.isoformat(),
-                }
-            ),
-            200,
-        )
-    return jsonify(appointments_list)
+        appointments_list.append({
+            "appointment_id": appoint.id,
+            "slot_id": appoint.slot_id,
+            "status_label": appointment_status.label if appointment_status else None,
+            "price": appoint.price,
+            "specialist_id": specialist.id if specialist else None,
+            "specialist_first_name": specialist.first_name if specialist else None,
+            "specialist_last_name": specialist.last_name if specialist else None,
+            "start_at": slot.start_at.isoformat() if slot and slot.start_at else None,
+            "end_at": slot.end_at.isoformat() if slot and slot.end_at else None,
+            "created_at": appoint.created_at.isoformat() if appoint.created_at else None,
+        })
+    return jsonify(appointments_list), 200

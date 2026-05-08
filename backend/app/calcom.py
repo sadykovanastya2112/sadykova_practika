@@ -48,6 +48,8 @@ class CalComClient:
             headers=self._get_headers(),
             params=params,
         )
+
+        print(response.text)
         response.raise_for_status()
         data = response.json()
         # API возвращает слоты в виде { "2024-08-13": ["09:00", "10:00"] }

@@ -14,6 +14,7 @@ class CalComClient:
         self.api_key = current_app.config['CALCOM_API_KEY']
         # Используем slug вместо ID (как указано в .env)
         self.event_type_slug = current_app.config['CALCOM_EVENT_TYPE_SLUG']
+        self.username = current_app.config.get('CALCOM_USERNAME')
 
     def _get_headers(self) -> Dict[str, str]:
         """Возвращает стандартные заголовки для запросов к Cal.com API."""
@@ -39,6 +40,7 @@ class CalComClient:
             'start': start_date,
             'end': end_date,
             'timeZone': timezone,
+            'username': self.username,
         }
 
         response = requests.get(
@@ -74,7 +76,8 @@ class CalComClient:
             "attendee": {
                 "name": attendee_name,
                 "email": attendee_email,
-                "timeZone": "Europe/Moscow"
+                "timeZone": "Europe/Moscow",
+                "username": self.username,
             }
         }
 

@@ -33,7 +33,8 @@
     "CALCOM_API_KEY": "cal_live_3165bcb34af2e318e3982ff9e92554c3",
     "CALCOM_EVENT_TYPE_SLUG": "newsession",
     "CALCOM_API_URL": "https://api.cal.com/v2",
-    "CALCOM_WEBHOOK_SECRET": "48WlNGt8VRNpctXbPvvLvw"
+    "CALCOM_WEBHOOK_SECRET": "48WlNGt8VRNpctXbPvvLvw",
+    "CALCOM_USERNAME": "johngarik"
   },
   "postCreateCommand": "chmod +x ./.devcontainer/welcome.sh && npm install --prefix frontend && pip install -r backend/requirements.txt && echo './.devcontainer/welcome.sh' >> ~/.bashrc",
 

@@ -2,6 +2,8 @@
 import { Dialog, Button } from 'primevue'
 import AppAvatar from './AppAvatar.vue'
 import { pluralize } from '@/utils/pluralize'
+import AppointmentDialog from './AppointmentDialog.vue'
+import { ref } from 'vue'
 
 defineProps({
   visible: Boolean,
@@ -9,6 +11,13 @@ defineProps({
 })
 
 const emit = defineEmits(['update:visible'])
+
+const isAppointmentVisible = ref(false)
+
+function openBooking() {
+  emit('update:visible', false) // Закрываем профиль
+  isAppointmentVisible.value = true // Открываем запись
+}
 </script>
 
 <template>
@@ -54,8 +63,13 @@ const emit = defineEmits(['update:visible'])
           <small>Цена сессии</small>
           <p>{{ specialist.base_price }} ₽</p>
         </div>
-        <Button label="Записаться" icon="pi pi-calendar-plus" class="px-8" />
+        <Button label="Записаться" icon="pi pi-calendar-plus" class="px-8" @click="openBooking" />
       </footer>
     </template>
   </Dialog>
+  <AppointmentDialog
+    v-if="isAppointmentVisible"
+    v-model:visible="isAppointmentVisible"
+    :specialist="specialist"
+  />
 </template>

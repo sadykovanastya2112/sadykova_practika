@@ -111,7 +111,7 @@ onMounted(fetchSlots)
 
       <div class="flex flex-col gap-1">
         <label>Цена (оставьте пустым для базовой)</label>
-        <InputNumber v-model="slotPrice" mode="currency" currency="USD" locale="en-US" />
+        <InputNumber v-model="slotPrice" mode="currency" currency="RUB" locale="ru-RU" />
       </div>
 
       <Button label="Создать серию слотов" icon="pi pi-plus" @click="createBulkSlots" />
@@ -129,17 +129,23 @@ onMounted(fetchSlots)
       >
         <Column header="Дата">
           <template #body="{ data }">
-            {{ new Date(data.start_at).toLocaleDateString() }}
+            {{ new Date(data.start_at + 'Z').toLocaleDateString() }}
           </template>
         </Column>
         <Column header="Время">
           <template #body="{ data }">
             {{
-              new Date(data.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              new Date(data.start_at + 'Z').toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
             }}
             -
             {{
-              new Date(data.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              new Date(data.end_at + 'Z').toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
             }}
           </template>
         </Column>

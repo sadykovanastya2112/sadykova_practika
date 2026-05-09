@@ -1,39 +1,37 @@
-import CatalogView from '@/views/CatalogView.vue'
-import ClientAppointmentsView from '@/views/ClientAppointmentsView.vue'
-import SpecialistSessionsView from '@/views/SpecialistSessionsView.vue'
-import SpecialistScheduleView from '@/views/SpecialistScheduleView.vue'
-import AdminControlPanelView from '@/views/AdminControlPanelView.vue'
-import LandingView from '@/views/LandingView.vue'
-
 export default [
   {
     path: '',
-    component: LandingView,
+    component: () => import('@/views/LandingView.vue'),
     meta: { requiredRole: null },
   },
   {
     path: 'catalog',
-    component: CatalogView,
+    component: () => import('@/views/CatalogView.vue'),
     meta: { requiredRole: null },
   },
   {
     path: 'client/appointments',
-    component: ClientAppointmentsView,
+    component: () => import('@/views/ClientAppointmentsView.vue'),
     meta: { requiredRole: 'client' },
   },
   {
     path: 'specialist/sessions',
-    component: SpecialistSessionsView,
+    component: () => import('@/views/SpecialistSessionsView.vue'),
     meta: { requiredRole: 'specialist' },
   },
   {
     path: 'specialist/schedule',
-    component: SpecialistScheduleView,
+    component: () => import('@/views/SpecialistScheduleView.vue'),
     meta: { requiredRole: 'specialist' },
   },
   {
     path: 'admin/control-panel',
-    component: AdminControlPanelView,
+    component: () => import('@/views/AdminControlPanelView.vue'),
     meta: { requiredRole: 'admin' },
+  },
+  {
+    path: 'payment/callback',
+    component: () => import('@/views/PaymentCallback.vue'),
+    meta: { requiresRole: 'any' },
   },
 ]

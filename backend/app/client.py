@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import filetype
 from flask import Blueprint, current_app, g, jsonify, request
@@ -91,6 +91,7 @@ def check_specialist_slots():
                 "id": s.id,
                 "start_at": s.start_at.isoformat(),
                 "end_at": s.end_at.isoformat(),
+                "price": s.price,
             }
             for s in slots
         ]
@@ -286,10 +287,6 @@ def show_appointment():
     return jsonify(appointments_list), 200
 
 
-
-
-
-
 @clients_bp.route("/appointments/<int:appointment_id>/meeting-link", methods=["GET"])
 @jwt_required
 def get_meeting_link(appointment_id):
@@ -314,15 +311,16 @@ def get_meeting_link(appointment_id):
     if appointment.status_id != paid_status.id:
         return jsonify({"error": "Appointment not paid"}), 403
 
-
     start_at = appointment.slot.start_at
 
     # Генерируем уникальное имя комнаты (например, на основе ID бронирования)
     room_name = f"psych-help-{appointment_id}"
     meeting_link = f"https://meet.jit.si/{room_name}"
 
-    return jsonify({
-        "meeting_link": meeting_link,
-        "room_name": room_name,
-        "available_from": start_at
-    }), 200
+    return jsonify(
+        {
+            "meeting_link": meeting_link,
+            "room_name": room_name,
+            "available_from": start_at,
+        }
+    ), 200

@@ -90,7 +90,7 @@ def create_payment():
                 "amount": {"value": f"{price:.2f}", "currency": "RUB"},
                 "confirmation": {
                     "type": "redirect",
-                    "return_url": f"{current_app.config['API_URL']}/payment-success?appointment_id={appointment_id}",
+                    "return_url": f"{current_app.config['BASE_URL']}/payment/callback",
                 },
                 "capture": True,
                 "description": f"Оплата сессии #{appointment_id}",

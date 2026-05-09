@@ -156,3 +156,36 @@ export const apiDeleteSlot = async (id) => {
   const response = await api.delete(`/slots/delete/${id}`)
   return response.data
 }
+
+export async function apiGetAvailableSlots(specialistId) {
+  const response = await api.get('/clients/get-slots', { params: { specialist_id: specialistId } })
+  return response.data
+}
+
+export async function apiCreateAppointment(slotId, specialistId) {
+  const response = await api.post('/clients/make-appointment', {
+    slot_id: slotId,
+    specialist_id: specialistId,
+  })
+  return response.data
+}
+
+export async function apiCreatePayment(appointmentId) {
+  const response = await api.post('/payments/create-payment', { appointment_id: appointmentId })
+  return response.data
+}
+
+export async function apiCheckPaymentStatus(paymentId) {
+  const response = await api.get(`/payments/check/${paymentId}`)
+  return response.data
+}
+
+export async function apiGetAppointments() {
+  const response = await api.get('/clients/appointments')
+  return response.data
+}
+
+export async function apiGetMeetingLink(appointmentId) {
+  const response = await api.get(`/clients/appointments/${appointmentId}/meeting-link`)
+  return response.data
+}

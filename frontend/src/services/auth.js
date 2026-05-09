@@ -22,7 +22,7 @@ export const login = () => {
 export const logout = async () => {
   authState.clear()
   try {
-    const response = await api.post('/auth/assign-role')
+    const response = await api.post('/auth/logout')
     return response.data
   } catch (error) {
     throw error

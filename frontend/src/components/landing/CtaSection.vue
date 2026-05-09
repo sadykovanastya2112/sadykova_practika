@@ -1,5 +1,6 @@
 <script setup>
 import { Button } from 'primevue'
+import { login } from '@/services/auth'
 </script>
 <template>
   <section
@@ -8,8 +9,10 @@ import { Button } from 'primevue'
     <h2 class="text-white">Готовы начать?</h2>
     <p class="text-zinc-50">Сделайте первый шаг к своему ментальному благополучию прямо сейчас.</p>
     <div class="flex flex-wrap justify-center gap-4">
-      <Button label="Найти психолога" severity="contrast" class="px-10 py-4" />
-      <Button label="Стать специалистом" outlined class="px-10 py-4 text-white border-white" />
+      <Button asChild v-slot="slotProps" severity="contrast">
+        <RouterLink to="/catalog" :class="slotProps.class">Найти психолога</RouterLink>
+      </Button>
+      <Button label="Стать участником" @click="login" severity="secondary" />
     </div>
   </section>
 </template>

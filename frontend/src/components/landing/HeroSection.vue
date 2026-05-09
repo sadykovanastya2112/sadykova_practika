@@ -1,5 +1,6 @@
 <script setup>
 import { Button } from 'primevue'
+import { login } from '@/services/auth'
 </script>
 
 <template>
@@ -25,8 +26,10 @@ import { Button } from 'primevue'
         распутать клубок мыслей и найти путь к спокойствию.
       </h4>
       <div class="w-full flex max-md:flex-col justify-center gap-4 mt-6">
-        <Button label="Найти психолога" />
-        <Button label="Стать специалистом" outlined />
+        <Button asChild v-slot="slotProps">
+          <RouterLink to="/catalog" :class="slotProps.class">Найти психолога</RouterLink>
+        </Button>
+        <Button label="Стать участником" outlined @click="login" />
       </div>
     </div>
   </section>

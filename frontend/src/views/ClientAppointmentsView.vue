@@ -59,6 +59,13 @@ function formatDate(dateStr) {
   })
 }
 
+function calculateDuration(start, end) {
+  if (!start || !end) return '—'
+  const diffMs = new Date(end) - new Date(start)
+  const minutes = Math.round(diffMs / 60000)
+  return `${minutes} мин.`
+}
+
 onMounted(fetchAppointments)
 </script>
 
@@ -95,6 +102,10 @@ onMounted(fetchAppointments)
             <div class="flex items-center gap-2">
               <i class="pi pi-calendar text-primary"></i>
               <span>{{ formatDate(app.start_at) }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="pi pi-clock"></i>
+              <span>Длительность: {{ calculateDuration(app.start_at, app.end_at) }}</span>
             </div>
             <div class="flex items-center gap-2">
               <i class="pi pi-wallet"></i>

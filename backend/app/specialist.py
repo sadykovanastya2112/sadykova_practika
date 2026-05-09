@@ -3,10 +3,18 @@ import os
 from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy import func
 
+from app.client import validate_and_save_image
 from app.extension import db
 from app.jwt_auth import jwt_required
-from app.models import Member, Review, Specialist, SpecialistDocuments
-from app.client import validate_and_save_image
+from app.models import (
+    Appointment,
+    AppointmentStatus,
+    Member,
+    Review,
+    Slot,
+    Specialist,
+    SpecialistDocuments,
+)
 
 specialist_bp = Blueprint("specialist", __name__)
 
@@ -242,7 +250,6 @@ def profile():
     return jsonify({"me": profile_data, "id": specialist.id})
 
 
-
 @specialist_bp.route("/upload-photo", methods=["POST"])
 @jwt_required
 def upload_specialist_photo():
@@ -250,21 +257,22 @@ def upload_specialist_photo():
     specialist, error, status = get_current_specialist(member_id)
     if error:
         return error, status
-    if 'photo' not in request.files:
+    if "photo" not in request.files:
         return jsonify({"error": "No file part"}), 400
-    file = request.files['photo']
+    file = request.files["photo"]
     new_filename, err = validate_and_save_image(file, member_id)
     if err:
         return jsonify({"error": err}), 400
     # удаляем старый файл
     old = specialist.photo_url
     if old:
-        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old.split('/')[-1])
+        old_path = os.path.join(current_app.config["UPLOAD_FOLDER"], old.split("/")[-1])
         if os.path.exists(old_path):
             os.remove(old_path)
     specialist.photo_url = f"/uploads/{new_filename}"
     db.session.commit()
     return jsonify({"photo_url": specialist.photo_url}), 200
+
 
 @specialist_bp.route("/update", methods=["PUT"])
 @jwt_required
@@ -338,3 +346,49 @@ def get_my_documents():
             }
         )
     return jsonify(result), 200
+
+
+@specialist_bp.route("/appointments", methods=["GET"])
+@jwt_required
+def show_specialist_appointments():
+    member_id = g.member_id
+    specialist, error_response, status = get_current_specialist(member_id)
+    if error_response:
+        return error_response, status
+
+    # Получаем все бронирования, которые сделаны на слоты этого специалиста
+    appointments = (
+        Appointment.query.join(Slot)
+        .filter(Slot.specialist_id == specialist.id)
+        .order_by(Slot.start_at.desc())
+        .all()
+    )
+
+    if not appointments:
+        return jsonify([]), 200
+
+    appointments_list = []
+    for appoint in appointments:
+        status_obj = AppointmentStatus.query.get(appoint.status_id)
+        slot = appoint.slot
+        client = appoint.client
+
+        appointments_list.append(
+            {
+                "appointment_id": appoint.id,
+                "slot_id": appoint.slot_id,
+                "status_label": status_obj.label if status_obj else "Неизвестно",
+                "price": appoint.price,
+                "client_id": client.id if client else None,
+                "client_name": client.display_name if client else "Клиент",
+                "client_avatar": client.avatar_url if client else None,
+                "start_at": slot.start_at.isoformat()
+                if slot and slot.start_at
+                else None,
+                "end_at": slot.end_at.isoformat() if slot and slot.end_at else None,
+                "created_at": appoint.created_at.isoformat()
+                if appoint.created_at
+                else None,
+            }
+        )
+    return jsonify(appointments_list), 200

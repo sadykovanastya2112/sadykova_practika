@@ -189,3 +189,8 @@ export async function apiGetMeetingLink(appointmentId) {
   const response = await api.get(`/clients/appointments/${appointmentId}/meeting-link`)
   return response.data
 }
+
+export async function apiGetSpecialistAppointments() {
+  const response = await api.get('/specialist/appointments')
+  return response.data
+}

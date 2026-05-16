@@ -65,18 +65,47 @@ cd safe-contact
 - Выберите папку склонированного репозитория.
 - Нажмите в уведомлении в правом нижнем углу окна кнопку **«Reopen in container»**.
 
-### 3. Запуск приложения
+### 3. Установка backend-зависимостей
 
-В среде разработки из корня запустите в двух разных терминалах по очереди команды:
+Из папки backend:
 
-```powershell
-flask run
-npm run dev --prefix frontend
-```
+'''cd backend
+'''python -m pip install -r requirements.txt
 
-Чтобы остановить сервер, нажмите в окнах PowerShell сочетание клавиш Ctrl + C.
+Если часть зависимостей отсутствует:
 
----
+python -m pip install \
+flask-jwt-extended \
+flask-session \
+flask-smorest \
+flask-bcrypt \
+flask-marshmallow \
+marshmallow \
+marshmallow-sqlalchemy \
+apispec \
+webargs \
+Authlib \
+requests-cache \
+filetype \
+yookassa
+
+### 4. Запуск backend
+
+Из папки backend:
+
+'''python -m flask run
+
+Backend будет доступен по адресу:
+
+http://127.0.0.1:5000
+
+### 5. Запуск frontend
+
+Во втором терминале:
+
+'''cd /workspaces/safe-contact
+'''npm install --prefix frontend
+'''npm run dev --prefix frontend
 
 ## API Endpoints (основные)
 

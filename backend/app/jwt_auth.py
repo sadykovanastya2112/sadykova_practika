@@ -25,7 +25,6 @@ def jwt_required(f):
         if not auth_header.startswith("Bearer "):
             return jsonify({"error": "Missing or invalid Authorization header"}), 401
         token = auth_header[7:]
-        print(f"DEBUG: Processing token: {token[:10]}...")
 
         try:
             jwks_url = f"{current_app.config['LOGTO_ISSUER']}/jwks"

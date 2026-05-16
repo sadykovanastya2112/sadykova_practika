@@ -54,14 +54,10 @@ export const apiGetUserRoles = async () => {
 }
 
 export const apiAssignRole = async (roleName) => {
-  try {
-    const response = await api.post('/auth/assign-role', {
-      role: roleName,
-    })
-    return response.data
-  } catch (error) {
-    throw error
-  }
+  const response = await api.post('/auth/assign-role', {
+    role: roleName,
+  })
+  return response.data
 }
 
 export const apiGetUserIdentity = async () => {
@@ -84,31 +80,23 @@ export const apiGetUserIdentity = async () => {
 
 export const apiGetUserProfile = async () => {
   const currentRole = authState.role
-  try {
-    if (currentRole === 'client') {
-      const response = await api.get('/clients/me')
-      return response.data.me
-    } else if (currentRole === 'specialist') {
-      const response = await api.get('/specialist/me')
-      return response.data.me
-    }
-  } catch (e) {
-    throw e
+  if (currentRole === 'client') {
+    const response = await api.get('/clients/me')
+    return response.data.me
+  } else if (currentRole === 'specialist') {
+    const response = await api.get('/specialist/me')
+    return response.data.me
   }
 }
 
 export const apiUpdateProfile = async (data) => {
   const currentRole = authState.role
-  try {
-    if (currentRole === 'client') {
-      const response = await api.put('/clients/me', data)
-      return response.data
-    } else if (currentRole === 'specialist') {
-      const response = await api.put('/specialist/update', data)
-      return response.data
-    }
-  } catch (e) {
-    throw e
+  if (currentRole === 'client') {
+    const response = await api.put('/clients/me', data)
+    return response.data
+  } else if (currentRole === 'specialist') {
+    const response = await api.put('/specialist/update', data)
+    return response.data
   }
 }
 

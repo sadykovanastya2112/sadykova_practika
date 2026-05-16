@@ -12,7 +12,9 @@ class Config:
     LOGTO_ISSUER = os.getenv("LOGTO_ISSUER")
     LOGTO_REDIRECT_URI = os.getenv("LOGTO_REDIRECT_URI")
     BASE_URL = os.getenv("BASE_URL")
-    API_URL = os.getenv("API_URL", )
+    API_URL = os.getenv(
+        "API_URL",
+    )
     SESSION_TYPE = "filesystem"
     SESSION_FILE_DIR = os.path.join(
         os.path.abspath(os.path.dirname(__file__)), "flask_session"
@@ -20,7 +22,7 @@ class Config:
     SESSION_COOKIE_DOMAIN = None
     YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
     YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = "sqlite:///app.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True
@@ -31,5 +33,4 @@ class Config:
     CALCOM_API_URL = os.getenv("CALCOM_API_URL")
     CALCOM_EVENT_TYPE_SLUG = os.getenv("CALCOM_EVENT_TYPE_SLUG")
     CALCOM_WEBHOOK_SECRET = os.getenv("CALCOM_WEBHOOK_SECRET")
-    CALCOM_USERNAME = os.getenv('CALCOM_USERNAME')
-
+    CALCOM_USERNAME = os.getenv("CALCOM_USERNAME")

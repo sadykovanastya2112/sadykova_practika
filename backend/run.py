@@ -1,18 +1,12 @@
-from app import create_app
-from flask import current_app, send_from_directory
+from flask import Flask, send_from_directory
 
-app = create_app()
-
-
-@app.route("/ping")
-def ping():
-    return "pong"
+app = Flask(__name__, static_folder="static")
 
 
-@app.route("/uploads/<path:filename>")
-def uploaded_file(filename):
-    return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+@app.route("/")
+def home():
+    return send_from_directory(app.static_folder, "index.html")
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5001, debug=True)

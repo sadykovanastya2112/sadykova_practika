@@ -27,7 +27,6 @@ def login():
     session["oauth_state"] = state
     session["oauth_nonce"] = nonce
     redirect_uri = current_app.config["LOGTO_REDIRECT_URI"]
-    print("Callback: session state:", session.get("oauth_state"))
 
     return oauth.logto.authorize_redirect(redirect_uri, state=state, nonce=nonce)
 
@@ -101,7 +100,6 @@ def callback():
         else:
             session["active_role"] = "client"
 
-    print("Access token:", token.get("access_token"))
     # 5. Сохраняем member.id в сессию для быстрого доступа
     session["member_id"] = member.id
 
@@ -110,8 +108,6 @@ def callback():
         session["jwt_token"] = id_token
     else:
         return jsonify({"warning": "id_token not found in Logto response"}), 100
-
-    print("Callback: session state:", session.get("oauth_state"))
 
     #return redirect("/auth/whoami")
     return redirect(f"{current_app.config['BASE_URL']}/catalog")
@@ -286,7 +282,6 @@ def get_me():
                 db.session.add(Client(member_id=member_id, display_name=f"User{member_id}"))
                 db.session.commit()
 
-    print("All roles:", all_roles)
     return jsonify({
         "id": member.id,
         "email": member.email,

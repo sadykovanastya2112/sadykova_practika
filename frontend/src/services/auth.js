@@ -16,15 +16,11 @@ export const authState = reactive({
 
 export const login = () => {
   sessionStorage.setItem('auth_in_progress', 'true')
-  window.location.href = `${import.meta.env.VITE_API_URL}/auth/login` //не должно ли быть return?
+  return window.location.href = `${import.meta.env.VITE_API_URL}/auth/login`
 }
 
 export const logout = async () => {
   authState.clear()
-  try {
-    const response = await api.post('/auth/logout')
-    return response.data
-  } catch (error) {
-    throw error
-  }
+  const response = await api.post('/auth/logout')
+  return response.data
 }

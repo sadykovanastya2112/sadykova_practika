@@ -48,7 +48,7 @@ const userData = ref({
 watch(
   () => authState.role,
   async (newRole) => {
-    if (!!newRole) {
+    if (newRole) {
       const identity = await apiGetUserIdentity()
       userData.value.name = identity.displayName
       userData.value.photo = identity.photo
